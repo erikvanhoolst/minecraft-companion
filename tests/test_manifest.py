@@ -112,6 +112,27 @@ class ManifestTests(unittest.TestCase):
             if slot < 36:
                 self.assertLessEqual(y + height, 786, "drawer must leave inventory slots reachable")
 
+    def test_day_clock_is_visible_between_tabs_and_content(self):
+        for page in self.manifest["pages"]:
+            clock = [w for w in page["widgets"]
+                     if w.get("bind_text", "").startswith("clock.")]
+            self.assertEqual({w["bind_text"] for w in clock}, {"clock.time", "clock.sunset"})
+            self.assertEqual(len(clock), 3, page["id"])
+            self.assertEqual({w.get("need_bind") for w in clock
+                              if w["bind_text"] == "clock.sunset"},
+                             {"clock.soon", "!clock.soon"})
+            for w in clock:
+                x, y, _, _ = w["rect"]
+                self.assertGreaterEqual(y, 64)
+                self.assertLessEqual(y + 8 * w["text_scale"], 100)
+                self.assertLessEqual(x, self.manifest["canvas_w"])
+            for w in widgets(page):
+                if any(k.startswith("on_") for k in w) and "rect" in w:
+                    if w["rect"][1] < 100:
+                        self.assertLessEqual(w["rect"][1] + w["rect"][3], 64)
+                    else:
+                        self.assertGreaterEqual(w["rect"][1], 100)
+
 
 if __name__ == "__main__":
     unittest.main()

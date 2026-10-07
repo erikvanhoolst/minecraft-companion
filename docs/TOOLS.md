@@ -31,7 +31,7 @@ preset and dimension and press Confirm. The package supplies three default World
 `scripts/thor.sh install` supplies the writable Android companion directory automatically;
 installation through Eden's ZIP importer requires configuring that path separately.
 
-Run `ctest --test-dir build/linux --output-on-failure` for inventory, waypoint, death, project and
+Run `ctest --test-dir build/linux --output-on-failure` for inventory, day clock, waypoint, death, project and
 exploration fixtures, and `python3 -m unittest discover -s tests` for packaging, configuration
 and manifest navigation checks. Effect fixtures also exercise strengths, game-tick
 countdowns, expiry, torn reads, vector growth, paging and unsupported builds. `scripts/verify_release.py dist/0100D71004694000.dsmod.zip`

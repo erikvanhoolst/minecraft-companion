@@ -14,6 +14,7 @@
 #include "core/mods/dsmod_module_extensions.h"
 #include "core/mods/modules/dsmod_module_sdk.h"
 #include "mc_assets.h"
+#include "mc_clock.h"
 #include "mc_debug.h"
 #include "mc_map.h"
 #include "mc_reader.h"
@@ -129,6 +130,8 @@ void SampleCallback(void* p, const EdenDsmodHostApi* host) {
         if (p && host) {
             auto* m = static_cast<Module*>(p);
             m->reader.Sample(*host, &m->assets);
+            mc_clock::Sample(*host, m->reader.ActiveLayout(), m->reader.Player(),
+                             m->reader.InventoryState().ready);
             m->map.Sample(*host, m->reader);
             m->waypoints.Sample(*host);
             m->projects.Sample(*host, m->reader.InventoryState());
