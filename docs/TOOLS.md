@@ -31,7 +31,7 @@ preset and dimension and press Confirm. The package supplies three default World
 `scripts/thor.sh install` supplies the writable Android companion directory automatically;
 installation through Eden's ZIP importer requires configuring that path separately.
 
-Run `ctest --test-dir build/linux --output-on-failure` for inventory, waypoint, project and
+Run `ctest --test-dir build/linux --output-on-failure` for inventory, waypoint, death, project and
 exploration fixtures, and `python3 -m unittest discover -s tests` for packaging, configuration
 and manifest navigation checks. `scripts/verify_release.py dist/0100D71004694000.dsmod.zip`
 checks both platform modules and the complete installation archive.
@@ -43,6 +43,11 @@ world/dimension confirmation and persistence after module reload. Use an isolate
 Fixtures also exercise unloaded terrain, stale worker results, inventory variants and unknown
 counts. The Android module is cross-compiled and package-validated; handheld runtime validation
 of these new features remains separate.
+
+Death fixtures cover health transitions, respawn, full manual waypoint lists, frozen trails,
+world/dimension isolation, reload, deletion, route limits, clipped overlays and invalid storage.
+Desktop checks with isolated saved death data verify the red map marker and trail, navigation,
+and touch controls on Map and Waypoints. These do not simulate a death by modifying game memory.
 
 ## Research console in the module
 

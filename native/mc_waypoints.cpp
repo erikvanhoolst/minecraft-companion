@@ -17,7 +17,8 @@
 namespace mc_waypoints {
 namespace {
 using Json = nlohmann::json;
-constexpr std::size_t MaxPoints = 64, MaxGroups = 128, MaxFileBytes = 2 * 1024 * 1024;
+constexpr std::size_t MaxPoints = 64, MaxGroups = 128, MaxFileBytes = 8 * 1024 * 1024;
+constexpr std::size_t MaxSavedTrail = 8192;
 constexpr std::int64_t MaxCoordinate = 30000000;
 double Normalize(double degrees) {
     return std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);
@@ -115,6 +116,7 @@ void Waypoints::Load() {
         std::map<Scope, Group> loaded;
         std::vector<std::uint64_t> ids;
         std::uint64_t next = 1;
+        std::size_t trail_count = 0;
         for (const auto& world : data["worlds"]) {
             Scope scope{world.at("key").get<std::string>(), BoundedInteger(world.at("dimension"), 0, 2)};
             if (scope.first.empty() || scope.first.size() > 128 || scope.second < 0 ||
@@ -138,10 +140,34 @@ void Waypoints::Load() {
                 next = std::max(next, point.id + 1);
                 group.points.push_back(std::move(point));
             }
+            if (world.contains("death")) {
+                const auto& raw = world["death"];
+                Point point{static_cast<std::uint64_t>(BoundedInteger(raw.at("id"), 1, 1000000000)), "Death",
+                    BoundedInteger(raw.at("x"), -MaxCoordinate, MaxCoordinate),
+                    BoundedInteger(raw.at("y"), -MaxCoordinate, MaxCoordinate),
+                    BoundedInteger(raw.at("z"), -MaxCoordinate, MaxCoordinate)};
+                if (std::find(ids.begin(), ids.end(), point.id) != ids.end()) throw std::runtime_error("death id");
+                ids.push_back(point.id);
+                next = std::max(next, point.id + 1);
+                group.death = point;
+                const auto& trail = raw.at("trail");
+                if (!trail.is_array() || trail.size() > MaxTrail) throw std::runtime_error("death trail");
+                for (const auto& step : trail) {
+                    if (!step.at("start").is_boolean()) throw std::runtime_error("trail start");
+                    group.death_trail.push_back({BoundedInteger(step.at("x"), -MaxCoordinate, MaxCoordinate),
+                        BoundedInteger(step.at("z"), -MaxCoordinate, MaxCoordinate), step["start"].get<bool>()});
+                }
+                trail_count += group.death_trail.size();
+                if (trail_count > MaxSavedTrail) throw std::runtime_error("trail limit");
+            }
             if (std::none_of(group.points.begin(), group.points.end(), [&](const Point& p) {
                     return p.id == group.selected;
-                })) group.selected = 0;
+                }) && (!group.death || group.death->id != group.selected)) group.selected = 0;
             loaded.emplace(std::move(scope), std::move(group));
+        }
+        if (data.contains("death_trail_enabled")) {
+            if (!data["death_trail_enabled"].is_boolean()) throw std::runtime_error("trail setting");
+            show_death_trail = data["death_trail_enabled"].get<bool>();
         }
         groups = std::move(loaded);
         next_id = next;
@@ -163,13 +189,19 @@ void Waypoints::Save() {
         const auto status = std::filesystem::symlink_status(file, error);
         if (status.type() != std::filesystem::file_type::not_found &&
             (error || !std::filesystem::is_regular_file(status))) throw std::runtime_error("target");
-        Json data{{"version", 1}, {"worlds", Json::array()}};
+        Json data{{"version", 1}, {"worlds", Json::array()}, {"death_trail_enabled", show_death_trail}};
         for (const auto& [scope, group] : groups) {
             Json world{{"key", scope.first}, {"dimension", scope.second},
                        {"selected", group.selected}, {"points", Json::array()}};
             for (const auto& point : group.points)
                 world["points"].push_back({{"id", point.id}, {"name", point.name},
                     {"x", point.x}, {"y", point.y}, {"z", point.z}});
+            if (group.death) {
+                const auto& point = *group.death;
+                world["death"] = {{"id", point.id}, {"x", point.x}, {"y", point.y}, {"z", point.z}, {"trail", Json::array()}};
+                for (const auto& step : group.death_trail)
+                    world["death"]["trail"].push_back({{"x", step.x}, {"z", step.z}, {"start", step.start}});
+            }
             data["worlds"].push_back(std::move(world));
         }
         std::filesystem::create_directories(file.parent_path());
@@ -177,6 +209,7 @@ void Waypoints::Save() {
         if (descriptor < 0) throw std::runtime_error("open");
         own_temporary = true;
         const std::string bytes = data.dump(2) + '\n';
+        if (bytes.size() > MaxFileBytes) throw std::runtime_error("file limit");
         std::size_t written{};
         while (written < bytes.size()) {
             const auto count = ::write(descriptor, bytes.data() + written, bytes.size() - written);
@@ -212,14 +245,89 @@ void Waypoints::Sample(const EdenDsmodHostApi& host) {
     ready = ready && Coordinate(x) && Coordinate(y) && Coordinate(z) && std::isfinite(heading);
     if (current != scope) {
         action_status.clear();
+        alive = false;
+        live_trail.clear();
+        trail_start = true;
         current = std::move(scope);
     }
+    TrackDeath(integer("player.health_ok") != 0, integer("player.health"));
     Publish(host);
+}
+
+void Waypoints::TrackDeath(bool health_ok, std::int64_t health) {
+    // Require consecutive trustworthy observations in a confirmed scope. Loading a world,
+    // an unreadable HUD or starting on the death screen never counts as a death.
+    if (!ready || !health_ok || health < 0) {
+        alive = false;
+        trail_start = true;
+        if (!ready) live_trail.clear();
+        return;
+    }
+    if (health > 0) {
+        last_alive = {0, "Death", x, y, z};
+        const double distance = live_trail.empty() ? 0 : std::hypot(
+            static_cast<double>(x - live_trail.back().x), static_cast<double>(z - live_trail.back().z));
+        if (live_trail.empty() || trail_start || distance >= 2) {
+            live_trail.push_back({x, z, trail_start || distance > 64});
+            if (live_trail.size() > MaxTrail) {
+                live_trail.erase(live_trail.begin());
+                live_trail.front().start = true;
+            }
+        }
+        alive = true;
+        trail_start = false;
+        return;
+    }
+    if (!alive) return;
+    alive = false;
+    trail_start = true;
+    if (!groups.contains(current) && groups.size() >= MaxGroups) {
+        action_status = "Death marker not saved: world limit reached";
+        live_trail.clear();
+        return;
+    }
+    auto& group = groups[current];
+    // Keep one latest death, outside the manual waypoint limit. Never evict a user's place.
+    last_alive.id = next_id++;
+    group.death = last_alive;
+    if (live_trail.empty() || live_trail.back().x != last_alive.x || live_trail.back().z != last_alive.z)
+        live_trail.push_back({last_alive.x, last_alive.z, false});
+    if (live_trail.size() > MaxTrail) live_trail.erase(live_trail.begin());
+    if (!live_trail.empty()) live_trail.front().start = true;
+    group.death_trail = std::move(live_trail);
+    std::size_t total = 0;
+    for (const auto& [scope, saved] : groups) total += saved.death_trail.size();
+    for (auto& [scope, saved] : groups) {
+        if (total <= MaxSavedTrail) break;
+        if (scope == current) continue;
+        total -= saved.death_trail.size();
+        saved.death_trail.clear();
+    }
+    live_trail.clear();
+    group.selected = group.death->id;
+    action_status = "Death marked. Use Death to find your way back.";
+    Save();
 }
 
 bool Waypoints::OnAction(const char* action, std::int64_t argument) {
     if (!action) return false;
     const std::string_view name{action};
+    if (name == "death_trail") {
+        show_death_trail = !show_death_trail;
+        Save();
+        return true;
+    }
+    if (name == "death_select") {
+        if (ready) {
+            const auto found = groups.find(current);
+            if (found != groups.end() && found->second.death) {
+                found->second.selected = found->second.death->id;
+                action_status.clear();
+                Save();
+            }
+        }
+        return true;
+    }
     if (!name.starts_with("waypoint_")) return false;
     if (name != "waypoint_add" && name != "waypoint_select" && name != "waypoint_delete" &&
         name != "waypoint_stop" && name != "waypoint_prev" && name != "waypoint_next") return false;
@@ -254,6 +362,11 @@ bool Waypoints::OnAction(const char* action, std::int64_t argument) {
         const auto before = group.points.size();
         std::erase_if(group.points, [&](const Point& p) { return p.id == group.selected; });
         changed = before != group.points.size();
+        if (group.death && group.death->id == group.selected) {
+            group.death.reset();
+            group.death_trail.clear();
+            changed = true;
+        }
         group.selected = 0;
         group.page = std::min(group.page, static_cast<int>(group.points.empty() ? 0 : (group.points.size() - 1) / PageSize));
         if (changed) action_status = "Waypoint deleted";
@@ -282,6 +395,7 @@ void Waypoints::Publish(const EdenDsmodHostApi& host) {
     };
     const auto found = groups.find(current);
     const Group* group = ready && found != groups.end() ? &found->second : nullptr;
+    PublishDeath(host, group);
     integer("waypoint.ready", ready); integer("waypoint.count", group ? group->points.size() : 0);
     text("waypoint.storage", storage_status);
     text("waypoint.status", !ready ? "Choose and confirm your world on Map" : action_status);
@@ -292,6 +406,7 @@ void Waypoints::Publish(const EdenDsmodHostApi& host) {
     integer("waypoint.empty", ready && (!group || group->points.empty()));
     const Point* selected = nullptr;
     if (group) for (const auto& point : group->points) if (point.id == group->selected) selected = &point;
+    if (group && group->death && group->death->id == group->selected) selected = &*group->death;
     for (int row = 0; row < PageSize; ++row) {
         const auto index = static_cast<std::size_t>((group ? group->page : 0) * PageSize + row);
         const Point* point = group && index < group->points.size() ? &group->points[index] : nullptr;
@@ -321,10 +436,104 @@ void Waypoints::Publish(const EdenDsmodHostApi& host) {
     const double px = map_px + selected->x - x, pz = map_pz + selected->z - z;
     const bool marker = map_view > 0 && std::isfinite(px) && std::isfinite(pz) &&
                         px >= 0 && pz >= 0 && px < map_view && pz < map_view;
-    integer("waypoint.marker", marker);
+    integer("waypoint.marker", marker && !(group->death && selected == &*group->death));
     if (marker) {
         number("waypoint.map_x", px * 768 / map_view);
         number("waypoint.map_z", pz * 768 / map_view);
     }
+}
+
+std::optional<mc_assets::Image> Waypoints::LoadTrail(std::string_view key) {
+    std::lock_guard lock{trail_mutex};
+    for (const auto& picture : trail_images)
+        if (!picture.key.empty() && picture.key == key) return picture.image;
+    return std::nullopt;
+}
+
+void Waypoints::PublishDeath(const EdenDsmodHostApi& host, const Group* group) {
+    const auto integer = [&](const char* key, std::int64_t value) {
+        if (host.publish_i64) host.publish_i64(host.userdata, key, value);
+    };
+    const auto number = [&](const char* key, double value) {
+        if (host.publish_f64) host.publish_f64(host.userdata, key, value);
+    };
+    const auto text = [&](const char* key, const std::string& value) {
+        if (host.publish_text) host.publish_text(host.userdata, key, value.c_str());
+    };
+    const Point* death = group && group->death ? &*group->death : nullptr;
+    integer("death.available", death != nullptr);
+    integer("death.marker", 0);
+    integer("death.trail_visible", 0);
+    integer("death.trail_enabled", show_death_trail);
+    integer("death.trail_points", death ? group->death_trail.size() : 0);
+    number("death.map_x", 0); number("death.map_z", 0);
+    text("death.trail_label", show_death_trail ? "Death trail: On" : "Death trail: Off");
+    text("death.trail_image", "");
+    text("death.coords", death ? "X " + std::to_string(death->x) + "  Y " +
+        std::to_string(death->y) + "  Z " + std::to_string(death->z) : "");
+    if (!death || !std::isfinite(map_px) || !std::isfinite(map_pz) ||
+        (map_view != 64 && map_view != 128 && map_view != 256)) return;
+    // map.x/z are floored block positions; map.px/pz retain the sub-block fraction.
+    const double origin_x = x - std::floor(map_px), origin_z = z - std::floor(map_pz);
+    const double px = death->x - origin_x, pz = death->z - origin_z;
+    const bool marker = px >= 0 && pz >= 0 && px < map_view && pz < map_view;
+    integer("death.marker", marker);
+    if (marker) {
+        number("death.map_x", px * 768 / map_view);
+        number("death.map_z", pz * 768 / map_view);
+    }
+    if (!show_death_trail || group->death_trail.empty()) return;
+    if (drawn_death != death->id || drawn_x != origin_x || drawn_z != origin_z || drawn_view != map_view) {
+        const int size = static_cast<int>(map_view);
+        mc_assets::Image image;
+        image.width = image.height = size;
+        image.rgba.resize(size * size * 4);
+        const auto pixel = [&](int px, int pz) {
+            if (px < 0 || pz < 0 || px >= size || pz >= size) return;
+            const auto at = (pz * size + px) * 4;
+            image.rgba[at] = 255; image.rgba[at + 1] = 116;
+            image.rgba[at + 2] = 116; image.rgba[at + 3] = 255;
+        };
+        for (std::size_t i = 0; i < group->death_trail.size(); ++i) {
+            const auto& point = group->death_trail[i];
+            const double bx = point.x - origin_x, bz = point.z - origin_z;
+            if (i == 0 || point.start) {
+                if (bx >= 0 && bz >= 0 && bx < size && bz < size)
+                    pixel(static_cast<int>(bx), static_cast<int>(bz));
+                continue;
+            }
+            // Clip before rasterizing: a teleport or distant endpoint cannot cause an
+            // unbounded walk or draw outside the map's transparent overlay.
+            const auto& previous = group->death_trail[i - 1];
+            const double ax = previous.x - origin_x, az = previous.z - origin_z;
+            const double dx = bx - ax, dz = bz - az;
+            double first = 0, last = 1;
+            const auto clip = [&](double p, double q) {
+                if (p == 0) return q >= 0;
+                const double r = q / p;
+                if (p < 0) first = std::max(first, r); else last = std::min(last, r);
+                return first <= last;
+            };
+            if (!clip(-dx, ax) || !clip(dx, size - 1 - ax) ||
+                !clip(-dz, az) || !clip(dz, size - 1 - az)) continue;
+            const double start_x = ax + first * dx, start_z = az + first * dz;
+            const double end_x = ax + last * dx, end_z = az + last * dz;
+            const int steps = std::max(1, static_cast<int>(std::ceil(std::max(
+                std::abs(end_x - start_x), std::abs(end_z - start_z)))));
+            for (int step = 0; step <= steps; ++step)
+                pixel(static_cast<int>(std::lround(start_x + (end_x - start_x) * step / steps)),
+                      static_cast<int>(std::lround(start_z + (end_z - start_z) * step / steps)));
+        }
+        {
+            std::lock_guard lock{trail_mutex};
+            trail_images[1] = std::move(trail_images[0]);
+            trail_images[0] = {"death/trail/" + std::to_string(++trail_serial), std::move(image)};
+        }
+        drawn_death = death->id;
+        drawn_x = origin_x; drawn_z = origin_z; drawn_view = map_view;
+    }
+    std::lock_guard lock{trail_mutex};
+    integer("death.trail_visible", 1);
+    text("death.trail_image", "module:mc:" + trail_images[0].key);
 }
 } // namespace mc_waypoints

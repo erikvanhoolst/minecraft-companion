@@ -49,6 +49,12 @@ struct Module {
         if (!k.starts_with("mc:"))
             return EDEN_DSMOD_FALSE;
         k.remove_prefix(3);
+        if (k.starts_with("death/trail/")) {
+            const auto image = waypoints.LoadTrail(k);
+            if (!image) return EDEN_DSMOD_FALSE;
+            sink(receiver, image->width, image->height, image->rgba.data(), image->rgba.size());
+            return EDEN_DSMOD_TRUE;
+        }
         if (k == "waypoint/arrow") {
             const auto image = mc_waypoints::ArrowImage();
             sink(receiver, image.width, image.height, image.rgba.data(), image.rgba.size());

@@ -7,6 +7,12 @@ names receive a number, such as `Base 2`. Each world and dimension supports up t
 64 waypoints. **Stop** clears navigation while retaining the place; **Delete**
 removes the selected place.
 
+The separate **Death** button selects the automatically saved latest death in this
+world and dimension. It uses the same direction, distance, height, Stop and Delete
+controls. Its red map marker remains visible even when another destination is
+selected. **Death trail: On/Off** controls the recorded route back to it. See
+[death locations and return trails](death-location.md).
+
 The arrow points relative to your current heading: up means ahead, right means
 turn right. Distance measures horizontal X/Z displacement in blocks. Height
 difference shows destination Y minus your Y separately. Within two horizontal
@@ -48,13 +54,17 @@ data is saved, session only, or a write failed.
 
 Waypoint add, select, stop and delete save immediately via an exclusively created
 temporary file followed by atomic rename. Writes use local host storage; no guest
-memory or game save is modified. Files over 2 MiB, symlinks, nonregular files,
+memory or game save is modified. Files over 8 MiB, symlinks, nonregular files,
 malformed JSON and invalid coordinate records are preserved and storage becomes
 session only. Fix or move the faulty file before restarting. The version-1 file
 contains a `worlds` array, each entry with `key`, `dimension`, `selected`, and
 `points` (`id`, `name`, `x`, `y`, `z`). Advanced users can change names while the
 emulator is stopped. Runtime 18 offers no keyboard text-entry API, so the in-app
 creation flow uses the four labels above.
+
+Optional `death` records store `id`, `x`, `y`, `z` and a frozen `trail` of
+`x`, `z`, `start` points. The top-level `death_trail_enabled` boolean remembers
+the display setting. Existing version-1 files without these fields still load.
 
 Navigation uses the map reader's published coordinates and heading. It does not
 infer game offsets, search for terrain, plan safe walking routes, or account for

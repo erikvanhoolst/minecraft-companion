@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft second-screen companion: live inventory, equipment and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation; build projects with live inventory material counts. Assets come from the player’s own game.",
+ "_about": "Minecraft second-screen companion: live inventory, equipment and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts. Assets come from the player’s own game.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -1360,6 +1360,18 @@
      "need_bind": "map.ready"
     },
     {
+     "type": "image",
+     "rect": [
+      72,
+      152,
+      768,
+      768
+     ],
+     "color": "#FFFFFFFF",
+     "src_bind": "death.trail_image",
+     "need_bind": "death.trail_visible"
+    },
+    {
      "_note": "the game's player marker, turned to the player's heading",
      "type": "image",
      "rect": [
@@ -1736,6 +1748,67 @@
      "on_tap": "map_routes",
      "bg": "#FF262626",
      "color": "#FFFFFFFF"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      64,
+      144,
+      16,
+      16
+     ],
+     "x_bind": "death.map_x",
+     "y_bind": "death.map_z",
+     "bg": "#FFFF7474",
+     "color": "#FF691B1B",
+     "frame": 2,
+     "need_bind": "death.marker"
+    },
+    {
+     "type": "button",
+     "rect": [
+      762,
+      992,
+      148,
+      64
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "death_select",
+     "bg": "#FF262626",
+     "color": "#FFFF7474",
+     "text": "Death",
+     "need_bind": "death.available"
+    },
+    {
+     "type": "button",
+     "rect": [
+      924,
+      110,
+      286,
+      40
+     ],
+     "text_scale": 2,
+     "align": "center",
+     "border": 3,
+     "on_tap": "death_trail",
+     "bg": "#FF262626",
+     "color": "#FFFF7474",
+     "text": ""
+    },
+    {
+     "type": "label",
+     "rect": [
+      1067,
+      122,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "align": "center",
+     "color": "#FFFF7474",
+     "bind_text": "death.trail_label"
     }
    ],
    "no_auto_leave": true
@@ -2439,6 +2512,52 @@
      "text_scale": 2,
      "color": "#FF707880",
      "bind_text": "waypoint.storage"
+    },
+    {
+     "type": "button",
+     "rect": [
+      826,
+      180,
+      364,
+      64
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "death_select",
+     "bg": "#FF262626",
+     "color": "#FFFF7474",
+     "text": "Death",
+     "need_bind": "death.available"
+    },
+    {
+     "type": "button",
+     "rect": [
+      826,
+      924,
+      364,
+      64
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "death_trail",
+     "bg": "#FF262626",
+     "color": "#FFFF7474",
+     "text": ""
+    },
+    {
+     "type": "label",
+     "rect": [
+      1008,
+      948,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "align": "center",
+     "color": "#FFFF7474",
+     "bind_text": "death.trail_label"
     }
    ],
    "no_auto_leave": true
@@ -3889,6 +4008,16 @@
   "projects_page_next": {
    "kind": "module",
    "action": "projects_page_next",
+   "haptic": "click"
+  },
+  "death_select": {
+   "kind": "module",
+   "action": "death_select",
+   "haptic": "click"
+  },
+  "death_trail": {
+   "kind": "module",
+   "action": "death_trail",
    "haptic": "click"
   }
  },

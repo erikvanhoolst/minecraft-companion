@@ -73,6 +73,12 @@ Open **Waypoints** and tap **Base**, **Village**, **Mine** or **Place** to mark 
 
 Waypoints and active destinations are stored separately per confirmed world and dimension. Up to 64 markers are supported per map; repeated labels receive numbers. See [waypoint controls and storage](docs/features/waypoints.md).
 
+### Death location and return trail
+
+When readable health drops from above zero to zero, the companion automatically saves a red **Death** marker at your last observed living position and selects it for navigation. Tap **Death** on Map or Waypoints to return to it later. Each confirmed world and dimension keeps its latest death separately from the 64 manual waypoints.
+
+**Death trail: On/Off** optionally shows the route recorded before that death in red on Map. It starts off; the marker, frozen trail and setting save locally. Respawning starts a new recording without changing the saved return trail. **Stop** keeps the marker; **Delete** while Death is selected removes it and its trail. Confirm the actual world and dimension on Map first. Detection requires readable health and position (Minecraft 1.2.12); see [death location details](docs/features/death-location.md).
+
 ### Build projects
 
 Open **Projects**, create a list, and add building materials from the picker or your held hotbar item. Tap a row and adjust its required quantity with **±1**, **±16** and **±64**. For example, track 128 cobblestone, 32 oak planks and 16 glass.
