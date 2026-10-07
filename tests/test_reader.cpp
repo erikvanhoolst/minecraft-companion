@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Exercise the public reader against guest-memory fixtures; no game files required.
 #include "mc_reader.h"
+#include "mc_names.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -29,6 +30,66 @@ struct Fixture {
     const Layout* layout{};
     u64 unreadable{}, torn{};
     int torn_reads{};
+    u64 replace_stack_on_read{};
+    u64 next_tag = Base + 0xa000;
+
+    u64 AllocateTag(u64 vtable, std::size_t size = 0x80) {
+        const u64 at = next_tag;
+        next_tag += size;
+        if (next_tag - Base > memory.size())
+            memory.resize(next_tag - Base + 0x1000);
+        Put(at, host.main_base + vtable);
+        return at;
+    }
+    void String(u64 at, const std::string& value) {
+        if (value.size() <= 22) {
+            Put<u8>(at, value.size() * 2);
+            std::memcpy(memory.data() + at - Base + 1, value.c_str(), value.size() + 1);
+        } else {
+            const u64 data = AllocateTag(0, value.size() + 1);
+            Put<u64>(at, (value.size() + 1) | 1);
+            Put<u64>(at + 8, value.size());
+            Put(at + 16, data);
+            std::memcpy(memory.data() + data - Base, value.c_str(), value.size() + 1);
+        }
+    }
+    u64 Compound(std::map<std::string, u64> tags) {
+        const u64 compound = AllocateTag(layout->vt_compound_tag);
+        u64 previous{};
+        for (const auto& [key, tag] : tags) {
+            const u64 node = AllocateTag(0);
+            if (previous)
+                Put(previous + 8, node);
+            else {
+                Put(compound + 8, node);
+                Put(compound + 0x10, node);
+            }
+            String(node + 0x20, key);
+            Put(node + 0x38, tag);
+            previous = node;
+        }
+        Put<u64>(compound + 0x18, tags.size());
+        return compound;
+    }
+    u64 Short(s16 value) {
+        const u64 tag = AllocateTag(layout->vt_short_tag);
+        Put(tag + 8, value);
+        return tag;
+    }
+    u64 Metadata(const std::string& name, int enchantments = 3) {
+        const u64 name_tag = AllocateTag(layout->vt_string_tag);
+        String(name_tag + 8, name);
+        const u64 display = Compound({{"Name", name_tag}});
+        const u64 list = AllocateTag(layout->vt_list_tag);
+        const u64 elements = AllocateTag(0, 0x100);
+        for (int i = 0; i < enchantments; ++i)
+            Put(elements + i * 8, Compound({{"id", Short(17 + i)}, {"lvl", Short(3)}}));
+        Put(list + 8, elements);
+        Put(list + 0x10, elements + enchantments * 8);
+        Put(list + 0x18, elements + 0x100);
+        Put<u8>(list + 0x20, 10);
+        return Compound({{"display", display}, {"ench", list}});
+    }
 
     explicit Fixture(bool modern = false) {
         const char* build = modern ?
@@ -50,6 +111,10 @@ struct Fixture {
         };
         host.read_memory = [](void* p, u64 at, void* out, std::size_t size) -> EdenDsmodBool {
             auto& f = *static_cast<Fixture*>(p);
+            if (at == f.replace_stack_on_read) {
+                f.Put<u8>(f.stacks + f.layout->stack_count, 0);
+                f.replace_stack_on_read = 0;
+            }
             std::memcpy(out, f.memory.data() + (at - Base), size);
             if (at == f.torn && ++f.torn_reads % 2 == 0)
                 static_cast<u8*>(out)[0] ^= 1;
@@ -228,6 +293,103 @@ void TestEffects() {
 
 int main() {
     TestEffects();
+    const std::map<std::string, std::string> translations{
+        {"enchantment.digging", "Efficiency"}, {"enchantment.durability", "Unbreaking"},
+        {"enchantment.lootBonusDigger", "Fortune"}, {"enchantment.frostwalker", "Frost Walker"},
+        {"enchantment.curse.binding", "Curse of Binding"}};
+    const auto language = [&](const std::string& key) -> const std::string* {
+        const auto it = translations.find(key);
+        return it == translations.end() ? nullptr : &it->second;
+    };
+    Check(mc_names::EnchantmentName(15, 5, language) == "Efficiency V" &&
+          mc_names::EnchantmentName(17, 3, language) == "Unbreaking III" &&
+          mc_names::EnchantmentName(18, 3, language) == "Fortune III" &&
+          mc_names::EnchantmentName(25, 2, language) == "Frost Walker II" &&
+          mc_names::EnchantmentName(27, 1, language) == "Curse of Binding I",
+          "1.2.12 enchantment IDs must not use the modern Bedrock order");
+    Check(mc_names::EnchantmentName(15, 11, language) == "Efficiency 11" &&
+          mc_names::EnchantmentName(99, 3, language) == "Enchantment 99 III" &&
+          mc_names::EnchantmentName(-1, 3, language).empty(),
+          "unknown enchantments and unusual levels remain readable");
+    {
+        Fixture detail;
+        Reader inspector(detail.host, nullptr);
+        detail.Stack(detail.stacks, detail.item, 100);
+        const u64 metadata = detail.Metadata("Miner's lucky pickaxe", 8);
+        detail.Put(detail.stacks + detail.layout->stack_user_data, metadata);
+        Check(inspector.OnAction("item_inspect", 0), "inventory slot accepts touch");
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.name"] == "Diamond Pickaxe" &&
+              detail.texts["detail.custom_name"] == "Miner's lucky pickaxe" &&
+              detail.texts["detail.durability"] == "Durability: 1461 / 1561 (94%)" &&
+              detail.ints["detail.metadata_ok"] == 1, "touched item shows detached metadata");
+        Check(detail.texts["detail.enchant0"] == "Enchantment 17 III" &&
+              detail.ints["detail.next"] == 1, "enchantment levels and paging");
+        Check(inspector.OnAction("item_enchant_page", 1), "next enchantment page accepted");
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.enchant0"] == "Enchantment 23 III" &&
+              detail.texts["detail.enchant2"].empty() && detail.ints["detail.next"] == 0 &&
+              detail.ints["detail.prev"] == 1, "last page clears unused rows");
+        detail.Put<s32>(detail.player + detail.layout->player_selected, 5);
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.custom_name"] == "Miner's lucky pickaxe",
+              "game selection does not change inspected slot");
+        detail.Put(detail.stacks + detail.layout->stack_user_data, detail.Metadata("A longer custom name with Unicode: é", 0));
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.custom_name"] == "A longer custom name with Unicode: é" &&
+              detail.texts["detail.enchant_label"] == "Enchantments: None" &&
+              detail.texts["detail.enchant0"].empty(), "long string and fewer enchantments refresh");
+        detail.Put(detail.stacks + detail.layout->stack_user_data, metadata);
+        detail.unreadable = metadata;
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.custom_name"].empty() &&
+              detail.texts["detail.enchant_label"] == "Enchantments: Unavailable" &&
+              detail.texts["detail.enchant0"].empty(), "unreadable metadata clears previous data");
+        detail.unreadable = 0;
+        detail.torn = metadata;
+        inspector.Sample(detail.host);
+        Check(detail.ints["detail.metadata_ok"] == 0, "torn metadata cannot be shown");
+        detail.torn = 0;
+        detail.replace_stack_on_read = metadata;
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.name"] == "Item unavailable" &&
+              detail.texts["detail.custom_name"].empty(),
+              "stack replaced during NBT read cannot publish the old item's details");
+        detail.Stack(detail.stacks, detail.item, 100);
+        // Malformed search cycle must stop at the bounded node count.
+        const u64 cycle = detail.Compound({{"aaa", detail.Short(1)}});
+        const u64 root = cycle + 0x80;
+        detail.Put(root + 8, root);
+        detail.Put(detail.stacks + detail.layout->stack_user_data, cycle);
+        inspector.Sample(detail.host);
+        Check(detail.ints["detail.metadata_ok"] == 0, "cyclic metadata is bounded and unavailable");
+        detail.Put<u64>(detail.stacks + detail.layout->stack_user_data, 0);
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.custom_label"] == "Custom name: None" &&
+              detail.texts["detail.enchant_label"] == "Enchantments: None", "ordinary item has no metadata");
+        detail.unreadable = detail.item + detail.layout->item_max_damage;
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.durability"] == "Durability: Unavailable",
+              "unreadable durability is not called non-damageable");
+        detail.unreadable = 0;
+        detail.Stack(detail.armor, detail.item, 500);
+        detail.Put(detail.armor + detail.layout->stack_user_data, metadata);
+        Check(inspector.OnAction("item_inspect", 36), "equipment touch accepted");
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.durability"] == "Durability: 1061 / 1561 (68%)" &&
+              detail.ints["detail.armor"] == 1, "equipment details use its own slot");
+        Check(inspector.OnAction("item_inspect", 35), "last inventory slot accepted");
+        inspector.Sample(detail.host);
+        Check(detail.texts["detail.name"] == "Empty slot" &&
+              detail.texts["detail.custom_name"].empty() && detail.texts["detail.enchant0"].empty(),
+              "empty slots clear all previous item data");
+        Check(!inspector.OnAction("item_inspect", -1) && !inspector.OnAction("item_inspect", 40),
+              "out-of-range touch rejected");
+        Check(inspector.OnAction("item_close", 0), "close accepted");
+        inspector.Sample(detail.host);
+        Check(detail.ints["detail.open"] == 0 && detail.ints["detail.closed"] == 1 &&
+              detail.texts["detail.name"].empty(), "closing clears drawer");
+    }
     Fixture f;
     Reader reader(f.host, nullptr);
     f.Stack(f.stacks, f.item, 0);
@@ -355,8 +517,14 @@ int main() {
     Check(modern.ints["inv.ready"] == 1 && modern.ints["equip.ready"] == 0 &&
           modern.ints["inv.slot0.dur"] == -1 && modern.ints["inv.pickaxe_low"] == 0,
           "unlocated modern equipment/damage fields stay unavailable");
+    modern_reader.OnAction("item_inspect", 0);
+    modern_reader.Sample(modern.host);
+    Check(modern.texts["detail.name"] == "Diamond Pickaxe" &&
+          modern.texts["detail.durability"] == "Durability: Unavailable" &&
+          modern.texts["detail.enchant_label"] == "Enchantments: Unavailable",
+          "unsupported metadata stays explicitly unavailable without hiding item identity");
     modern_reader.OnAction("rescan", 0);
     Check(!modern_reader.InventoryState().ready && modern_reader.InventoryState().slots[0].id.empty(),
           "rescan invalidates public inventory snapshot");
-    std::puts("Reader equipment and durability checks passed");
+    std::puts("Reader item details, equipment and durability checks passed");
 }

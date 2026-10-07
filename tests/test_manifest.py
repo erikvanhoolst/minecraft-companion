@@ -87,6 +87,31 @@ class ManifestTests(unittest.TestCase):
             button = next(w for w in page["widgets"] if w.get("on_tap") == action)
             self.assertEqual(button["need_bind"], binding)
 
+    def test_item_touch_covers_inventory_hotbar_and_equipment(self):
+        page = next(page for page in self.manifest["pages"] if page["id"] == "inventory")
+        slots = {}
+        for widget in page["widgets"]:
+            if widget.get("on_tap") != "item_inspect":
+                continue
+            start = int(widget["payload"].removeprefix("{i+").removesuffix("}"))
+            x, y, width, height = widget["rect"]
+            columns = widget["repeat_cols"]
+            for i in range(widget["repeat"]):
+                slot = start + i
+                self.assertNotIn(slot, slots)
+                rx = x + (i % columns) * widget["repeat_dx"]
+                ry = y + (i // columns) * widget.get("repeat_row_dy", 0)
+                self.assertLessEqual(rx + width, self.manifest["canvas_w"])
+                self.assertLessEqual(ry + height, self.manifest["canvas_h"])
+                slots[slot] = (rx, ry, width, height)
+        self.assertEqual(set(slots), set(range(40)))
+        self.assertEqual(self.manifest["actions"]["item_inspect"]["argument"], "$payload")
+        drawer = [widget for widget in page["widgets"] if widget.get("need_bind") == "detail.open"]
+        self.assertTrue(any(widget.get("on_tap") == "item_close" for widget in drawer))
+        for slot, (x, y, width, height) in slots.items():
+            if slot < 36:
+                self.assertLessEqual(y + height, 786, "drawer must leave inventory slots reachable")
+
 
 if __name__ == "__main__":
     unittest.main()

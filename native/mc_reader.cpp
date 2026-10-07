@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <set>
 #include <vector>
 
 #include "mc_assets.h"
@@ -126,6 +127,11 @@ constexpr Layout Layouts[] = {
         .player_effects = 0x1148,
         .effect_registry = 0x3391A40,
         .effect_name = 0x20,
+        .stack_user_data = 0x10,
+        .vt_compound_tag = 0x2B6AE20,
+        .vt_list_tag = 0x2B6B0F8,
+        .vt_string_tag = 0x2B6B218,
+        .vt_short_tag = 0x2B6B188,
     },
 };
 
@@ -401,9 +407,12 @@ bool Reader::DecodeSlot(const EdenDsmodHostApi& host, const u8* raw, Slot& slot)
                       (!Read(host, slot.item, slot.item) || !slot.item)))
         return false;
     std::memcpy(&slot.block, raw + layout->stack_block, 8);
+    if (layout->stack_user_data)
+        std::memcpy(&slot.user_data, raw + layout->stack_user_data, 8);
     if (layout->item_max_damage && layout->damage_in_aux) {
         u16 maximum{};
-        if (Read(host, slot.item + layout->item_max_damage, maximum) && maximum > 0) {
+        slot.maximum_known = Read(host, slot.item + layout->item_max_damage, maximum);
+        if (slot.maximum_known && maximum > 0) {
             slot.max_damage = maximum;
             const int damage = static_cast<u16>(slot.aux);
             if (damage <= maximum) {
@@ -577,6 +586,156 @@ Reader::PlayerStats Reader::ReadPlayer(const EdenDsmodHostApi& host) {
         }
     }
     return stats;
+}
+
+bool Reader::FindTag(const EdenDsmodHostApi& host, u64 compound, const char* key,
+                     u64& tag) const {
+    tag = 0;
+    u64 vptr{}, node{}, count{};
+    // CompoundTag holds a libc++ std::map at +8. Its tree nodes hold the key at +0x20
+    // and unique_ptr<Tag> at +0x38 (CompoundTag::write, main+0xF9D2D4).
+    if (!Read(host, compound, vptr) || vptr != main_base + layout->vt_compound_tag ||
+        !Read(host, compound + 0x10, node) || !Read(host, compound + 0x18, count) ||
+        count > 64 || (count == 0) != (node == 0))
+        return false;
+    std::set<u64> visited;
+    while (node) {
+        if (visited.size() >= count || !visited.insert(node).second)
+            return false;
+        std::string name;
+        if (!ReadString(host, node + 0x20, name))
+            return false;
+        const int order = name.compare(key);
+        if (order == 0)
+            return Read(host, node + 0x38, tag) && tag != 0;
+        if (!Read(host, node + (order > 0 ? 0 : 8), node))
+            return false;
+    }
+    return true; // absent is distinct from unreadable
+}
+
+bool Reader::ReadMetadata(const EdenDsmodHostApi& host, u64 data, Metadata& out) const {
+    out = {};
+    if (!layout->stack_user_data)
+        return false;
+    if (!data)
+        return true;
+    u64 display{}, name{}, list{}, vptr{};
+    if (!FindTag(host, data, "display", display))
+        return false;
+    if (display) {
+        if (!FindTag(host, display, "Name", name))
+            return false;
+        if (name && (!Read(host, name, vptr) || vptr != main_base + layout->vt_string_tag ||
+                     !ReadString(host, name + 8, out.custom_name)))
+            return false;
+    }
+    if (!FindTag(host, data, "ench", list))
+        return false;
+    if (!list)
+        return true;
+    std::array<u64, 3> vector{}, after{};
+    u8 type{};
+    // ListTag::write (main+0xF9FE04): vector<unique_ptr<Tag>> at +8, type at +0x20.
+    if (!Read(host, list, vptr) || vptr != main_base + layout->vt_list_tag ||
+        !ReadBytes(host, list + 8, vector.data(), sizeof(vector)) ||
+        vector[1] < vector[0] || vector[2] < vector[1] ||
+        (vector[1] - vector[0]) % 8 || vector[1] - vector[0] > 32 * 8 ||
+        (!vector[0] && vector[1]) || !Read(host, list + 0x20, type) ||
+        (vector[1] != vector[0] && type != 10))
+        return false;
+    for (u64 at = vector[0]; at < vector[1]; at += 8) {
+        u64 entry{}, id{}, level{};
+        s16 id_value{}, level_value{};
+        if (!Read(host, at, entry) || !entry || !FindTag(host, entry, "id", id) || !id ||
+            !FindTag(host, entry, "lvl", level) || !level ||
+            !Read(host, id, vptr) || vptr != main_base + layout->vt_short_tag ||
+            !Read(host, id + 8, id_value) || id_value < 0 ||
+            !Read(host, level, vptr) || vptr != main_base + layout->vt_short_tag ||
+            !Read(host, level + 8, level_value) || level_value <= 0)
+            return false;
+        out.enchantments.emplace_back(id_value, level_value);
+    }
+    return ReadBytes(host, list + 8, after.data(), sizeof(after)) && vector == after;
+}
+
+void Reader::PublishDetails(const EdenDsmodHostApi& host, const Slot* slot, bool ready,
+                            const mc_assets::Library* assets) {
+    const bool open = detail_slot >= 0;
+    bool occupied = open && ready && slot && slot->count;
+    Metadata metadata, after;
+    // Re-read detached metadata, too: the two stable stack snapshots only cover its pointer.
+    bool metadata_ok = occupied && ReadMetadata(host, slot->user_data, metadata) &&
+                       ReadMetadata(host, slot->user_data, after) && metadata == after;
+    if (occupied) {
+        u64 begin = items_begin;
+        const bool armor = detail_slot >= static_cast<int>(SlotCount);
+        std::array<u8, 0x98> raw{};
+        Slot current;
+        const int index = armor ? detail_slot - SlotCount : detail_slot;
+        // The game may replace the stack while we walk NBT. Validate its identity once more
+        // before publishing, including the metadata pointer and wear of this exact slot.
+        if ((armor && !Read(host, player + layout->player_armor, begin)) || !begin ||
+            !ReadBytes(host, begin + index * layout->stack_size, raw.data(), layout->stack_size) ||
+            !DecodeSlot(host, raw.data(), current) || current.item != slot->item ||
+            current.block != slot->block || current.count != slot->count ||
+            current.aux != slot->aux || current.user_data != slot->user_data) {
+            ready = false;
+            occupied = false;
+            metadata_ok = false;
+        }
+    }
+    if (!metadata_ok)
+        metadata = {};
+    const auto integer = [&](const char* key, s64 value) {
+        host.publish_i64(host.userdata, key, value);
+    };
+    const auto text = [&](const char* key, const std::string& value) {
+        host.publish_text(host.userdata, key, open ? value.c_str() : "");
+    };
+    integer("detail.open", open);
+    integer("detail.closed", !open);
+    integer("detail.slot", detail_slot);
+    integer("detail.inventory", open && detail_slot < static_cast<int>(SlotCount));
+    integer("detail.armor", open && detail_slot >= static_cast<int>(SlotCount));
+    integer("detail.x", detail_slot >= static_cast<int>(SlotCount) ?
+            68 + (detail_slot - SlotCount) * 288 :
+            68 + (detail_slot < 9 ? detail_slot : (detail_slot - 9) % 9) * 124);
+    integer("detail.y", detail_slot >= static_cast<int>(SlotCount) ? 942 :
+            detail_slot < 9 ? 650 : 262 + (detail_slot - 9) / 9 * 124);
+    integer("detail.metadata_ok", metadata_ok);
+    const std::string status = !ready ? "Item unavailable" : "Empty slot";
+    text("detail.name", occupied ? (slot->name.empty() ? "Unknown item" : slot->name) : status);
+    text("detail.icon", occupied ? slot->icon : "");
+    text("detail.count", occupied ? "Count: " + std::to_string(slot->count) : "");
+    text("detail.custom_name", metadata.custom_name);
+    text("detail.custom_label", !occupied ? "" : !metadata_ok ? "Custom name: Unavailable" :
+         metadata.custom_name.empty() ? "Custom name: None" : "Custom name: " + metadata.custom_name);
+    text("detail.durability", !occupied ? "" : slot->durability >= 0 ?
+         "Durability: " + std::to_string(slot->remaining) + " / " +
+         std::to_string(slot->max_damage) + " (" + std::to_string(slot->durability) + "%)" :
+         slot->maximum_known && slot->max_damage == 0 ? "Durability: Not applicable" :
+         "Durability: Unavailable");
+    detail_pages = std::max(1, (static_cast<int>(metadata.enchantments.size()) + 5) / 6);
+    detail_page = std::clamp(detail_page, 0, detail_pages - 1);
+    integer("detail.prev", occupied && detail_page > 0);
+    integer("detail.next", occupied && detail_page + 1 < detail_pages);
+    text("detail.enchant_label", !occupied ? "" : !metadata_ok ? "Enchantments: Unavailable" :
+         metadata.enchantments.empty() ? "Enchantments: None" :
+         "Enchantments (" + std::to_string(metadata.enchantments.size()) + ")" +
+         (detail_pages > 1 ? "  " + std::to_string(detail_page + 1) + " / " +
+                            std::to_string(detail_pages) : ""));
+    for (int row = 0; row < 6; ++row) {
+        std::string label;
+        const int index = detail_page * 6 + row;
+        if (index < static_cast<int>(metadata.enchantments.size())) {
+            const auto [id, level] = metadata.enchantments[index];
+            label = assets ? assets->EnchantmentName(id, level) :
+                             mc_names::EnchantmentName(id, level);
+        }
+        const std::string key = "detail.enchant" + std::to_string(row);
+        text(key.c_str(), label);
+    }
 }
 
 void Reader::PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stats) {
@@ -845,6 +1004,17 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
             NameSlot(host, slot, assets);
     PublishPlayer(host, stats);
     PublishEffects(host, ready ? ReadEffects(host) : Effects{}, assets);
+    const Slot* inspected = nullptr;
+    bool detail_ready = false;
+    if (detail_slot >= 0 && detail_slot < static_cast<int>(SlotCount)) {
+        inspected = &slots[detail_slot];
+        detail_ready = ready;
+    } else if (detail_slot >= static_cast<int>(SlotCount) &&
+               detail_slot < static_cast<int>(SlotCount + ArmorSlotCount)) {
+        inspected = &stats.equipment[detail_slot - SlotCount];
+        detail_ready = stats.equipment_ok;
+    }
+    PublishDetails(host, inspected, detail_ready, assets);
     const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
                         std::chrono::steady_clock::now() - t0)
                         .count();
@@ -852,18 +1022,39 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
     host.publish_i64(host.userdata, "mc.alive", 1);
 }
 
-bool Reader::OnAction(const char* action, s64) {
-    if (action && std::strcmp(action, "effects_previous") == 0) {
+bool Reader::OnAction(const char* action, s64 argument) {
+    if (!action)
+        return false;
+    if (std::strcmp(action, "effects_previous") == 0) {
         if (effects_page > 0)
             --effects_page;
         return true;
     }
-    if (action && std::strcmp(action, "effects_next") == 0) {
+    if (std::strcmp(action, "effects_next") == 0) {
         if ((effects_page + 1) * EffectRows < effects_count)
             ++effects_page;
         return true;
     }
-    if (action && std::strcmp(action, "rescan") == 0) {
+    if (std::strcmp(action, "item_inspect") == 0) {
+        if (argument < 0 || argument >= static_cast<s64>(SlotCount + ArmorSlotCount))
+            return false;
+        detail_slot = static_cast<int>(argument);
+        detail_page = 0;
+        return true;
+    }
+    if (std::strcmp(action, "item_close") == 0) {
+        detail_slot = -1;
+        detail_page = 0;
+        return true;
+    }
+    if (std::strcmp(action, "item_enchant_page") == 0) {
+        if (detail_slot < 0 || (argument != -1 && argument != 1))
+            return false;
+        detail_page = std::clamp(detail_page + static_cast<int>(argument), 0, detail_pages - 1);
+        return true;
+    }
+    if (std::strcmp(action, "rescan") == 0) {
+        detail_slot = -1;
         snapshot = {};
         effects_page = effects_count = 0;
         inventory = 0;

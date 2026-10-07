@@ -433,6 +433,15 @@ std::string Library::ItemName(std::string_view description_id, int aux) const {
     });
 }
 
+std::string Library::EnchantmentName(int id, int level) const {
+    return mc_names::EnchantmentName(id, level, [this](const std::string& key) -> const std::string* {
+        if (!Loaded())
+            return nullptr;
+        const auto it = index.lang.find(key);
+        return it == index.lang.end() ? nullptr : &it->second;
+    });
+}
+
 std::optional<Image> Library::LoadIcon(const EdenDsmodHostApi& host, std::string_view key) const {
     std::optional<std::string> path;
     auto split_frame = [](std::string_view s, int& frame) {

@@ -20,6 +20,10 @@
 //   equip.ready         consistent snapshot of the four worn armor slots
 //   equip.slot<i>.*     same fields as inventory slots; 0 helmet, 1 chestplate, 2 legs, 3 boots
 //   inv.diag             short text explaining why inv.ready is 0
+//   detail.open/closed   touch drawer visibility; detail.slot is 0..35 inventory, 36..39 armor
+//   detail.name/icon/count, detail.custom_name/custom_label, detail.durability
+//   detail.enchant_label, detail.enchant0..5, detail.prev/next   live inspected item details
+//   detail.metadata_ok   1 only after two matching, bounded NBT reads (1.2.12)
 //   player.health, player.health_max, player.hunger, player.armor, player.air, player.air_max
 //                        the local player's state as the game's HUD shows it (half icons:
 //                        health 20 = ten hearts, air 0..air_max)
@@ -124,6 +128,9 @@ struct Layout {
     u32 player_effects{};
     u64 effect_registry{};     // MobEffect* by id, main-relative (ids 0..25)
     u32 effect_name{};         // std::string language key inside MobEffect
+    // ItemInstance NBT (1.2.12 only): verified from Tag serializers and live named items.
+    u32 stack_user_data{};
+    u64 vt_compound_tag{}, vt_list_tag{}, vt_string_tag{}, vt_short_tag{};
 };
 
 constexpr std::size_t SlotCount = 36;
@@ -174,8 +181,10 @@ private:
         std::string name;
         std::string icon;
         int max_damage{};
+        bool maximum_known{};
         int remaining{};
         int durability{-1};
+        u64 user_data{};
     };
     struct Stat {
         bool ok{};
@@ -212,6 +221,18 @@ private:
     void PublishEffects(const EdenDsmodHostApi& host, const Effects& effects,
                         const mc_assets::Library* assets);
     void PublishSlot(const EdenDsmodHostApi& host, const char* prefix, const Slot& slot, bool ready);
+    struct Metadata {
+        std::string custom_name;
+        std::vector<std::pair<int, int>> enchantments;
+        bool operator==(const Metadata&) const = default;
+    };
+    bool FindTag(const EdenDsmodHostApi& host, u64 compound, const char* key, u64& tag) const;
+    bool ReadMetadata(const EdenDsmodHostApi& host, u64 data, Metadata& out) const;
+    void PublishDetails(const EdenDsmodHostApi& host, const Slot* slot, bool ready,
+                        const mc_assets::Library* assets);
+    int detail_slot{-1}; // 0..35 inventory; 36..39 equipment. Independent of game selection.
+    int detail_page{};
+    int detail_pages{1};
 
     InventorySnapshot snapshot;
     std::size_t effects_page{};
