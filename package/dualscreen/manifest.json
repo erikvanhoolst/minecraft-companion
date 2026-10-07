@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft second-screen companion: live inventory, equipment and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts. Assets come from the player’s own game.",
+ "_about": "Minecraft second-screen companion: live inventory, equipment and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts. Assets come from the player’s own game. Redstone notebook with saved schematics, build checklists and personal notes.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -67,66 +67,82 @@
     {
      "type": "button",
      "rect": [
-      132,
+      36,
       14,
-      228,
+      224,
       72
      ],
      "text": "Inventory",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_inventory"
+     "on_tap": "page_inventory",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      376,
+      272,
       14,
-      228,
+      224,
       72
      ],
      "text": "Map",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_map"
+     "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      620,
+      508,
       14,
-      228,
+      224,
       72
      ],
      "text": "Waypoints",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_waypoints"
+     "on_tap": "page_waypoints",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      864,
+      744,
       14,
-      228,
+      224,
       72
      ],
      "text": "Projects",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_projects"
+     "on_tap": "page_projects",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      980,
+      14,
+      224,
+      72
+     ],
+     "text": "Redstone",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_notebook",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "label",
@@ -200,66 +216,82 @@
     {
      "type": "button",
      "rect": [
-      132,
+      36,
       14,
-      228,
+      224,
       72
      ],
      "text": "Inventory",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF3E3E3E",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_inventory"
+     "on_tap": "page_inventory",
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      376,
+      272,
       14,
-      228,
+      224,
       72
      ],
      "text": "Map",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_map"
+     "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      620,
+      508,
       14,
-      228,
+      224,
       72
      ],
      "text": "Waypoints",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_waypoints"
+     "on_tap": "page_waypoints",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      864,
+      744,
       14,
-      228,
+      224,
       72
      ],
      "text": "Projects",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_projects"
+     "on_tap": "page_projects",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      980,
+      14,
+      224,
+      72
+     ],
+     "text": "Redstone",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_notebook",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "_note": "swipe left for the map",
@@ -1246,66 +1278,82 @@
     {
      "type": "button",
      "rect": [
-      132,
+      36,
       14,
-      228,
+      224,
       72
      ],
      "text": "Inventory",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_inventory"
+     "on_tap": "page_inventory",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      376,
+      272,
       14,
-      228,
+      224,
       72
      ],
      "text": "Map",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF3E3E3E",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_map"
+     "on_tap": "page_map",
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      620,
+      508,
       14,
-      228,
+      224,
       72
      ],
      "text": "Waypoints",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_waypoints"
+     "on_tap": "page_waypoints",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      864,
+      744,
       14,
-      228,
+      224,
       72
      ],
      "text": "Projects",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_projects"
+     "on_tap": "page_projects",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      980,
+      14,
+      224,
+      72
+     ],
+     "text": "Redstone",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_notebook",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "_note": "swipe right for the inventory",
@@ -1634,22 +1682,6 @@
      "need_bind": "waypoint.arrow"
     },
     {
-     "type": "button",
-     "rect": [
-      924,
-      924,
-      286,
-      56
-     ],
-     "text": "Waypoints",
-     "text_scale": 3,
-     "align": "center",
-     "border": 4,
-     "on_tap": "page_waypoints",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF"
-    },
-    {
      "type": "label",
      "rect": [
       24,
@@ -1831,66 +1863,82 @@
     {
      "type": "button",
      "rect": [
-      132,
+      36,
       14,
-      228,
+      224,
       72
      ],
      "text": "Inventory",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_inventory"
+     "on_tap": "page_inventory",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      376,
+      272,
       14,
-      228,
+      224,
       72
      ],
      "text": "Map",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_map"
+     "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      620,
+      508,
       14,
-      228,
+      224,
       72
      ],
      "text": "Waypoints",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF3E3E3E",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_waypoints"
+     "on_tap": "page_waypoints",
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      864,
+      744,
       14,
-      228,
+      224,
       72
      ],
      "text": "Projects",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_projects"
+     "on_tap": "page_projects",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      980,
+      14,
+      224,
+      72
+     ],
+     "text": "Redstone",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_notebook",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "label",
@@ -2580,66 +2628,82 @@
     {
      "type": "button",
      "rect": [
-      132,
+      36,
       14,
-      228,
+      224,
       72
      ],
      "text": "Inventory",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_inventory"
+     "on_tap": "page_inventory",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      376,
+      272,
       14,
-      228,
+      224,
       72
      ],
      "text": "Map",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_map"
+     "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      620,
+      508,
       14,
-      228,
+      224,
       72
      ],
      "text": "Waypoints",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF262626",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_waypoints"
+     "on_tap": "page_waypoints",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "button",
      "rect": [
-      864,
+      744,
       14,
-      228,
+      224,
       72
      ],
      "text": "Projects",
      "text_scale": 3,
      "align": "center",
-     "bg": "#FF3E3E3E",
-     "color": "#FFFFFFFF",
      "border": 3,
-     "on_tap": "page_projects"
+     "on_tap": "page_projects",
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      980,
+      14,
+      224,
+      72
+     ],
+     "text": "Redstone",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_notebook",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     },
     {
      "type": "label",
@@ -3742,6 +3806,880 @@
     }
    ],
    "no_auto_leave": true
+  },
+  {
+   "id": "notebook",
+   "title": "Redstone notebook",
+   "no_auto_leave": true,
+   "widgets": [
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      1240,
+      1080
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#00000000"
+    },
+    {
+     "type": "button",
+     "rect": [
+      36,
+      14,
+      224,
+      72
+     ],
+     "text": "Inventory",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_inventory",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      272,
+      14,
+      224,
+      72
+     ],
+     "text": "Map",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      508,
+      14,
+      224,
+      72
+     ],
+     "text": "Waypoints",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_waypoints",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      744,
+      14,
+      224,
+      72
+     ],
+     "text": "Projects",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_projects",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      980,
+      14,
+      224,
+      72
+     ],
+     "text": "Redstone",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "page_notebook",
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      116,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "bind_text": "notebook.name"
+    },
+    {
+     "type": "button",
+     "rect": [
+      860,
+      106,
+      154,
+      60
+     ],
+     "text": "Previous",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_previous",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1030,
+      106,
+      154,
+      60
+     ],
+     "text": "Next",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_next",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      176,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "bind_text": "notebook.design"
+    },
+    {
+     "type": "label",
+     "rect": [
+      520,
+      176,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "bind_text": "notebook.progress"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      214,
+      352,
+      60
+     ],
+     "text": "Schema",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_schema",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      436,
+      214,
+      352,
+      60
+     ],
+     "text": "Steps",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_steps",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      804,
+      214,
+      380,
+      60
+     ],
+     "text": "Notes",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_notes",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "image",
+     "rect": [
+      236,
+      298,
+      768,
+      576
+     ],
+     "color": "#FFFFFFFF",
+     "src_bind": "notebook.image",
+     "need_bind": "notebook.schema"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      888,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "need_bind": "notebook.schema",
+     "text": "Top-down; 1 cell = 1 block. Arrows show repeater direction."
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      918,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "need_bind": "notebook.schema",
+     "text": "L lever | w dust | T torch | # solid block | O lamp"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      948,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "need_bind": "notebook.schema",
+     "text": "P piston | B button | ^ > v < repeater | . empty"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      310,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "need_bind": "notebook.no_steps",
+     "text": "No steps yet. Import a design to add your build instructions."
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      310,
+      1116,
+      120
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_toggle_0",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step0.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      332,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE9B85B",
+     "need_bind": "notebook.step0.visible",
+     "bind_text": "notebook.step0.check"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      330,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step0.visible",
+     "bind_text": "notebook.step0.line0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      360,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step0.visible",
+     "bind_text": "notebook.step0.line1"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      390,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step0.visible",
+     "bind_text": "notebook.step0.line2"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      442,
+      1116,
+      120
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_toggle_1",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step1.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      464,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE9B85B",
+     "need_bind": "notebook.step1.visible",
+     "bind_text": "notebook.step1.check"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      462,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step1.visible",
+     "bind_text": "notebook.step1.line0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      492,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step1.visible",
+     "bind_text": "notebook.step1.line1"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      522,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step1.visible",
+     "bind_text": "notebook.step1.line2"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      574,
+      1116,
+      120
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_toggle_2",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step2.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      596,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE9B85B",
+     "need_bind": "notebook.step2.visible",
+     "bind_text": "notebook.step2.check"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      594,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step2.visible",
+     "bind_text": "notebook.step2.line0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      624,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step2.visible",
+     "bind_text": "notebook.step2.line1"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      654,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step2.visible",
+     "bind_text": "notebook.step2.line2"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      706,
+      1116,
+      120
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_toggle_3",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step3.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      728,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE9B85B",
+     "need_bind": "notebook.step3.visible",
+     "bind_text": "notebook.step3.check"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      726,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step3.visible",
+     "bind_text": "notebook.step3.line0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      756,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step3.visible",
+     "bind_text": "notebook.step3.line1"
+    },
+    {
+     "type": "label",
+     "rect": [
+      240,
+      786,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.step3.visible",
+     "bind_text": "notebook.step3.line2"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      310,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      348,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note1"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      386,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note2"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      424,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note3"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      462,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note4"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      500,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note5"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      538,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note6"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      576,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note7"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      614,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note8"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      652,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note9"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      690,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note10"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      728,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note11"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      766,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note12"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      804,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.notes",
+     "bind_text": "notebook.note13"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      870,
+      180,
+      60
+     ],
+     "text": "Previous",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_page_previous",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.paged"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      890,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "align": "center",
+     "need_bind": "notebook.paged",
+     "bind_text": "notebook.page"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1004,
+      870,
+      180,
+      60
+     ],
+     "text": "Next",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_page_next",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.paged"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      976,
+      220,
+      60
+     ],
+     "text": "New example",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_new",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      304,
+      976,
+      220,
+      60
+     ],
+     "text": "Reload",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_reload",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      540,
+      976,
+      220,
+      60
+     ],
+     "text": "Delete",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_delete",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      776,
+      976,
+      408,
+      60
+     ],
+     "text": "Confirm delete",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "notebook_delete_confirm",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "notebook.delete_armed"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      1048,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "bind_text": "notebook.message"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1184,
+      1070,
+      0,
+      0
+     ],
+     "text_scale": 1,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "notebook.storage"
+    }
+   ]
   }
  ],
  "actions": {
@@ -4018,6 +4956,91 @@
   "death_trail": {
    "kind": "module",
    "action": "death_trail",
+   "haptic": "click"
+  },
+  "page_notebook": {
+   "kind": "page",
+   "page": "notebook",
+   "transition": "fade",
+   "duration_ms": 200
+  },
+  "notebook_previous": {
+   "kind": "module",
+   "action": "notebook_previous",
+   "haptic": "click"
+  },
+  "notebook_next": {
+   "kind": "module",
+   "action": "notebook_next",
+   "haptic": "click"
+  },
+  "notebook_schema": {
+   "kind": "module",
+   "action": "notebook_schema",
+   "haptic": "click"
+  },
+  "notebook_steps": {
+   "kind": "module",
+   "action": "notebook_steps",
+   "haptic": "click"
+  },
+  "notebook_notes": {
+   "kind": "module",
+   "action": "notebook_notes",
+   "haptic": "click"
+  },
+  "notebook_page_previous": {
+   "kind": "module",
+   "action": "notebook_page_previous",
+   "haptic": "click"
+  },
+  "notebook_page_next": {
+   "kind": "module",
+   "action": "notebook_page_next",
+   "haptic": "click"
+  },
+  "notebook_new": {
+   "kind": "module",
+   "action": "notebook_new",
+   "haptic": "click"
+  },
+  "notebook_reload": {
+   "kind": "module",
+   "action": "notebook_reload",
+   "haptic": "click"
+  },
+  "notebook_delete": {
+   "kind": "module",
+   "action": "notebook_delete",
+   "haptic": "click"
+  },
+  "notebook_delete_confirm": {
+   "kind": "module",
+   "action": "notebook_delete_confirm",
+   "haptic": "click"
+  },
+  "notebook_toggle_0": {
+   "kind": "module",
+   "action": "notebook_toggle",
+   "argument": 0,
+   "haptic": "click"
+  },
+  "notebook_toggle_1": {
+   "kind": "module",
+   "action": "notebook_toggle",
+   "argument": 1,
+   "haptic": "click"
+  },
+  "notebook_toggle_2": {
+   "kind": "module",
+   "action": "notebook_toggle",
+   "argument": 2,
+   "haptic": "click"
+  },
+  "notebook_toggle_3": {
+   "kind": "module",
+   "action": "notebook_toggle",
+   "argument": 3,
    "haptic": "click"
   }
  },

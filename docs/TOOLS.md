@@ -31,12 +31,12 @@ preset and dimension and press Confirm. The package supplies three default World
 `scripts/thor.sh install` supplies the writable Android companion directory automatically;
 installation through Eden's ZIP importer requires configuring that path separately.
 
-Run `ctest --test-dir build/linux --output-on-failure` for inventory, waypoint, death, project and
+Run `ctest --test-dir build/linux --output-on-failure` for inventory, waypoint, death, project, notebook and
 exploration fixtures, and `python3 -m unittest discover -s tests` for packaging, configuration
 and manifest navigation checks. `scripts/verify_release.py dist/0100D71004694000.dsmod.zip`
 checks both platform modules and the complete installation archive.
 
-Desktop validation covers four-tab touch navigation, waypoint creation, the direction arrow,
+Earlier desktop validation covered four-tab touch navigation, waypoint creation, the direction arrow,
 the 128 cobblestone / 32 oak planks / 16 glass example, route toggling, background capture,
 world/dimension confirmation and persistence after module reload. Use an isolated
 `data_directory` when validating so fixture markers and lists stay out of normal companion data.
@@ -48,6 +48,12 @@ Death fixtures cover health transitions, respawn, full manual waypoint lists, fr
 world/dimension isolation, reload, deletion, route limits, clipped overlays and invalid storage.
 Desktop checks with isolated saved death data verify the red map marker and trail, navigation,
 and touch controls on Map and Waypoints. These do not simulate a death by modifying game memory.
+
+Import personal circuits with `scripts/import_redstone.py --source <notebook.json>
+--data-directory <companion-directory>`, then tap Reload on Redstone. Use
+`docs/examples/redstone.json` as a starting point. Notebook fixtures check schematic
+rendering, checklist persistence, independent step/note pages and damaged-file recovery;
+Python checks cover imports and retained progress. See [Redstone notebook](features/redstone-notebook.md).
 
 ## Research console in the module
 

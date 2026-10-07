@@ -4,7 +4,7 @@
 
 **[Download the latest release](https://github.com/erikvanhoolst/minecraft-companion/releases/latest)** · [Download the installation package directly](https://github.com/erikvanhoolst/minecraft-companion/releases/latest/download/0100D71004694000.dsmod.zip)
 
-This companion app for [Eden Duo](https://github.com/igawa6/eden-duo) displays your Minecraft inventory, map, waypoints, and build projects on the second screen. Eden Duo is a Nintendo Switch emulator for Android handhelds with two screens, such as the AYN Thor. While you keep playing on the top screen, the bottom screen shows what you are carrying, your character's status, and where you are.
+This companion app for [Eden Duo](https://github.com/igawa6/eden-duo) displays your Minecraft inventory, map, waypoints, build projects, and a Redstone notebook on the second screen. Eden Duo is a Nintendo Switch emulator for Android handhelds with two screens, such as the AYN Thor. While you keep playing on the top screen, the bottom screen shows what you are carrying, your character's status, and where you are.
 
 Eden Duo loads the app as a companion package (`.dsmod.zip`). A small C++ module reads data from the running game's memory, and a JSON manifest defines the layout on the bottom screen. Normal use only displays information and does not modify your inventory or world.
 
@@ -85,6 +85,18 @@ Open **Projects**, create a list, and add building materials from the picker or 
 
 The app totals all 36 inventory slots and shows what remains to collect, keeping item variants separate. Unreadable inventory shows unknown counts. You can create eight projects with up to 24 materials each. Lists save on each edit. Names use presets because the current runtime has no keyboard input; custom names can be edited in the saved JSON. See [build project controls](docs/features/build-projects.md).
 
+### Redstone notebook
+
+Open **Redstone** to follow saved circuit plans while building on the main screen.
+**Schema** shows a top-down block grid; **Steps** lets you check off build instructions;
+**Notes** shows your own text with page controls. Designs and checked steps save locally.
+The tab includes a simple lever/lamp example and supports up to 16 designs.
+
+The runtime has no keyboard. Edit a copy of [the example notebook](docs/examples/redstone.json),
+then import it with `scripts/import_redstone.py` and tap **Reload** on Redstone. Imports can update existing
+designs while preserving checked instructions. See [notebook controls, schema symbols
+and Android import instructions](docs/features/redstone-notebook.md).
+
 ### Persistent storage and world names
 
 Linux defaults to `$XDG_DATA_HOME/minecraft-companion`, or `$HOME/.local/share/minecraft-companion`. Android requires an absolute directory writable by Eden, such as `/sdcard/Android/data/dev.igawa6.edenduo/files/dualscreen/user/0100D71004694000/companion`. Without a writable directory, the app keeps changes for the session and displays its storage status.
@@ -98,11 +110,11 @@ python3 scripts/configure_companion.py \
   --data-directory "$HOME/.local/share/minecraft-companion"
 ```
 
-For Android, edit a local copy of the installed manifest with the device's absolute storage path, then copy it back. `scripts/thor.sh install` configures that path automatically. Configuration belongs to the installed copy and must be restored after reinstalling the package. Companion files contain markers, lists, terrain colors and routes; they do not modify Minecraft saves.
+For Android, edit a local copy of the installed manifest with the device's absolute storage path, then copy it back. `scripts/thor.sh install` configures that path automatically. Configuration belongs to the installed copy and must be restored after reinstalling the package. Companion files contain markers, lists, circuit plans, notes, terrain colors and routes; they do not modify Minecraft saves.
 
 ### Controls and status messages
 
-Tap **Inventory**, **Map**, **Waypoints** or **Projects** at the top to switch tabs. You can also swipe left on the inventory page to open the map, or swipe right on the map page to return.
+Tap **Inventory**, **Map**, **Waypoints**, **Projects** or **Redstone** at the top to switch tabs. You can also swipe left on the inventory page to open the map, or swipe right on the map page to return.
 
 Until a valid inventory has been read, the app displays **Waiting for a world** with a diagnostic message. This may take a moment while a world is loading. The map page displays **No map yet** when map data is not yet available.
 
@@ -129,7 +141,7 @@ Use Eden Duo **1.1.0 with runtime 18 or later**. The module accepts only the ful
 2. In Eden Duo, long-press Minecraft and choose **Add-ons → Install → Dual screen mods**. Select the ZIP file.
 3. Disable the Minecraft update in **Add-ons** to use the tested 1.2.12 base game.
 4. Launch Minecraft and open a world. The bottom screen first displays **Waiting for a world**, then your inventory.
-5. Open **Map**, choose the matching world preset and dimension, and tap **Confirm** to record exploration and enable **Waypoints**. Use **Projects** for material lists. Configure writable storage on Android as described above.
+5. Open **Map**, choose the matching world preset and dimension, and tap **Confirm** to record exploration and enable **Waypoints**. Use **Projects** for material lists and **Redstone** for circuit plans and build notes. Configure writable storage on Android as described above.
 
 ## Building
 
@@ -158,7 +170,7 @@ Game files, emulator keys such as `prod.keys` and `title.keys`, passwords, and a
 
 | Directory | Contents |
 |---|---|
-| `native/` | The C++ module: memory reader (`mc_reader`), map and saved exploration (`mc_map`, `mc_exploration`), waypoints (`mc_waypoints`), build projects (`mc_projects`), icons and font (`mc_assets`, `mc_zip`), item names (`mc_names`), and research console (`mc_debug`). Also includes the required ABI headers and third-party libraries. |
+| `native/` | The C++ module: memory reader (`mc_reader`), map and saved exploration (`mc_map`, `mc_exploration`), waypoints (`mc_waypoints`), build projects (`mc_projects`), Redstone designs and checklists (`mc_notebook`), icons and font (`mc_assets`, `mc_zip`), item names (`mc_names`), and research console (`mc_debug`). Also includes the required ABI headers and third-party libraries. |
 | `package/` | `package.json`, `dualscreen/manifest.json` (bottom-screen pages), and `dualscreen/mc_font.txt` (a reference to the game's font) |
 | `scripts/` | Building, installation, and testing on desktop and the Thor |
 | `research/` | Analysis scripts for the game executable and resource packs |

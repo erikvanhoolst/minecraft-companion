@@ -26,6 +26,8 @@ add_library(mc_companion SHARED
     native/mc_waypoints.h
     native/mc_names.cpp
     native/mc_names.h
+    native/mc_notebook.cpp
+    native/mc_notebook.h
     native/mc_projects.cpp
     native/mc_projects.h
     native/mc_reader.cpp
@@ -82,6 +84,16 @@ if(BUILD_TESTING AND NOT ANDROID)
     target_compile_features(mc_death_tests PRIVATE cxx_std_20)
     target_include_directories(mc_death_tests PRIVATE native native/sdk native/third_party)
     add_test(NAME mc_death COMMAND mc_death_tests)
+    add_executable(mc_notebook_module_tests tests/test_notebook_module.cpp)
+    target_compile_features(mc_notebook_module_tests PRIVATE cxx_std_20)
+    target_include_directories(mc_notebook_module_tests PRIVATE native/sdk native/third_party)
+    target_link_libraries(mc_notebook_module_tests PRIVATE mc_companion)
+    add_test(NAME mc_notebook_module COMMAND mc_notebook_module_tests)
+    add_executable(mc_notebook_tests tests/test_notebook.cpp native/mc_notebook.cpp)
+    target_compile_features(mc_notebook_tests PRIVATE cxx_std_20)
+    target_include_directories(mc_notebook_tests PRIVATE native native/sdk native/third_party)
+    target_link_libraries(mc_notebook_tests PRIVATE Threads::Threads)
+    add_test(NAME mc_notebook COMMAND mc_notebook_tests)
     add_executable(mc_projects_tests tests/test_projects.cpp native/mc_projects.cpp)
     target_compile_features(mc_projects_tests PRIVATE cxx_std_20)
     target_include_directories(mc_projects_tests PRIVATE native native/sdk native/third_party)
