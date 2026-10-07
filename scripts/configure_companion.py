@@ -32,7 +32,7 @@ def configure(manifest: Path, worlds: list[str], dimension: str,
     if len(set(worlds)) != len(worlds):
         raise ValueError("world names must be unique")
     if data_directory is not None:
-        if not PurePosixPath(data_directory).is_absolute():
+        if '\0' in data_directory or not PurePosixPath(data_directory).is_absolute():
             raise ValueError("data directory must be an absolute path on the device running Eden")
         config["data_directory"] = data_directory
     config["world_keys"] = worlds

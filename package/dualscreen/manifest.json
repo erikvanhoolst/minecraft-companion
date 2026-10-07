@@ -3892,5 +3892,12 @@
    "haptic": "click"
   }
  },
- "_world_setup": "Optional top-level world_keys/world_key, world_dimension (0 Overworld, 1 Nether, 2 End), and absolute data_directory. Select and confirm the active world/dimension on Map before recording history or waypoints."
+ "_world_setup": "Optional top-level world_keys/world_key, world_dimension (0 Overworld, 1 Nether, 2 End), and absolute data_directory. Select and confirm the active world/dimension on Map before recording history or waypoints.",
+ "world_keys": [
+  "World 1",
+  "World 2",
+  "World 3"
+ ],
+ "world_key": "World 1",
+ "world_dimension": 0
 }

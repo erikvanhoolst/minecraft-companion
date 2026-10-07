@@ -17,6 +17,9 @@ Configure the installed `dualscreen/manifest.json` with these optional top-level
 }
 ```
 
+The distributed manifest includes `World 1`, `World 2` and `World 3` presets. Assign each preset
+to a different actual save, or replace them with stable names using `scripts/configure_companion.py`.
+
 World keys are stable, case-sensitive names you choose for your saves. Use different keys for
 different saves, even if they share the same displayed Minecraft name. Up to 32 unique presets,
 with up to 128 UTF-8 bytes per key, are supported. `world_key` selects the initial preset; the
@@ -63,4 +66,6 @@ when the map generation changes, preventing another world or zoom from reappeari
 Validation: Linux build, CTest reader and exploration fixtures, and Python package tests. Fixtures
 cover negative coordinates, unloaded chunks, routes, scope isolation, reload and checksum failure,
 symlink refusal, bounded history, explicit identity confirmation, scope switches during a render,
-and background capture without an asset-load callback. Live game/Android validation remains needed.
+and background capture without an asset-load callback. Combined desktop validation also checks
+background capture, route toggling, identity confirmation and reload; Android handheld validation
+remains separate from the successful cross-compilation and archive checks.

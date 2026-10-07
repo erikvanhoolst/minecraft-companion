@@ -32,7 +32,8 @@ class ConfigureTests(unittest.TestCase):
     def test_invalid_inputs_leave_manifest_unchanged(self):
         before = self.manifest.read_bytes()
         for worlds, directory in [([""], None), (["x", "x"], None), (["x\n"], None),
-                                   (["é" * 65], None), (["x"], "relative")]:
+                                   (["é" * 65], None), (["x"], "relative"),
+                                   (["x"], "/directory\0suffix"), ([str(i) for i in range(33)], None)]:
             with self.subTest(worlds=worlds, directory=directory):
                 with self.assertRaises(ValueError):
                     configure(self.manifest, worlds, "overworld", directory)

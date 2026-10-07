@@ -16,12 +16,22 @@ case "$1" in
   install)
     tmp=$(mktemp -d); python3 -c "import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$ROOT/dist/$TITLE.dsmod.zip" "$tmp"
     rm -rf "$tmp/dualscreen/modules/linux-x86_64"
+    python3 - "$tmp/dualscreen/manifest.json" "$APP/dualscreen/user/$TITLE/companion" <<'PY'
+import json, sys
+from pathlib import Path
+manifest = Path(sys.argv[1])
+config = json.loads(manifest.read_text())
+config['data_directory'] = sys.argv[2]
+manifest.write_text(json.dumps(config, indent=1) + '\n')
+PY
     "$ADB" shell "mkdir -p $APP/load/$TITLE/Minecraft"
     "$ADB" shell "rm -rf $APP/load/$TITLE/Minecraft/dualscreen $APP/load/$TITLE/Minecraft/package.json"
     # adb cannot create directories under Android/data itself; make them with the shell and push file by file.
     "$ADB" shell "mkdir -p $APP/load/$TITLE/Minecraft/dualscreen/modules/android-arm64-v8a"
+    "$ADB" shell "mkdir -p $APP/dualscreen/user/$TITLE/companion"
     "$ADB" push "$tmp/package.json" "$APP/load/$TITLE/Minecraft/package.json" >/dev/null
     "$ADB" push "$tmp/dualscreen/manifest.json" "$APP/load/$TITLE/Minecraft/dualscreen/manifest.json" >/dev/null
+    "$ADB" push "$tmp/dualscreen/mc_font.txt" "$APP/load/$TITLE/Minecraft/dualscreen/mc_font.txt" >/dev/null
     "$ADB" push "$tmp/dualscreen/modules/android-arm64-v8a/$TITLE.so" "$APP/load/$TITLE/Minecraft/dualscreen/modules/android-arm64-v8a/$TITLE.so" >/dev/null
     "$ADB" shell "ls -laR $APP/load/$TITLE/Minecraft" | head -20; rm -rf "$tmp" ;;
   dbg)

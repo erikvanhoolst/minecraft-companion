@@ -4,7 +4,7 @@
 
 **[Download the latest release](https://github.com/erikvanhoolst/minecraft-companion/releases/latest)** · [Download the installation package directly](https://github.com/erikvanhoolst/minecraft-companion/releases/latest/download/0100D71004694000.dsmod.zip)
 
-This companion app for [Eden Duo](https://github.com/igawa6/eden-duo) displays your Minecraft inventory and a map on the second screen. Eden Duo is a Nintendo Switch emulator for Android handhelds with two screens, such as the AYN Thor. While you keep playing on the top screen, the bottom screen shows what you are carrying, your character's status, and where you are.
+This companion app for [Eden Duo](https://github.com/igawa6/eden-duo) displays your Minecraft inventory, map, waypoints, and build projects on the second screen. Eden Duo is a Nintendo Switch emulator for Android handhelds with two screens, such as the AYN Thor. While you keep playing on the top screen, the bottom screen shows what you are carrying, your character's status, and where you are.
 
 Eden Duo loads the app as a companion package (`.dsmod.zip`). A small C++ module reads data from the running game's memory, and a JSON manifest defines the layout on the bottom screen. Normal use only displays information and does not modify your inventory or world.
 
@@ -16,7 +16,11 @@ The installation package contains no Minecraft game files. Icons, HUD sprites, t
 |---|---|
 | ![Inventory showing item stacks and counts, player status, and the selected Birch Wood item](assets/screenshots/inventory-with-items.png) | ![Map tab showing terrain, the player marker, coordinates, heading, and zoom controls](assets/screenshots/map.png) |
 
-Captured from Minecraft 1.2.12 running in Eden Duo's desktop test environment. The inventory screenshot shows an earlier layout, before the tab buttons were added.
+| Waypoints tab | Projects tab |
+|---|---|
+| ![Waypoints with a selected destination, direction arrow and distance](assets/screenshots/waypoints.png) | ![Projects listing 128 cobblestone, 32 oak planks and 16 glass](assets/screenshots/projects.png) |
+
+Captured from Minecraft 1.2.12 running in Eden Duo's desktop test environment. The inventory screenshot shows an earlier layout, before the tab buttons were added. The other screenshots use isolated companion test data; the distant Place waypoint was imported to check the arrow without changing the game's position.
 
 ## Features
 
@@ -52,18 +56,47 @@ These values are available for Minecraft **1.2.12**. If a value cannot be read r
 
 The **Map** tab shows a top-down view of the terrain around your character:
 
-- **Moving map:** the map follows your position and uses the chunks Minecraft has loaded into memory. North is at the top.
+- **Moving map:** the map follows your position. North is at the top. Discovered terrain and earlier routes remain visible after their chunks unload, with separate history for each confirmed world and dimension.
 - **In-game map colors:** each block uses its own map color, with lighter and darker shades for height differences and water depth.
 - **Player marker:** the marker on the map paper rotates to match the direction you are facing.
 - **Coordinates:** X, Y, and Z appear beside the map. Y is measured at your feet, matching Minecraft's coordinate display.
 - **Heading:** the app shows one of eight compass directions, such as north, east, or southwest. On-screen labels are in English.
 - **Zoom:** tap **+** to zoom in and **−** to zoom out. The map covers 64 × 64, 128 × 128, or 256 × 256 blocks; the default is 128 × 128.
 
-The map is rendered only while its tab is visible. Moving and zooming request a new image; while you stand still, the map also refreshes periodically, approximately once per second at 60 updates per second. The previous image remains in the background while the new map loads.
+A background worker records terrain even while another tab is open. Moving and zooming request a new image; while you stand still, the map refreshes approximately once per second at 60 updates per second. **Routes** toggles the gold trace of your earlier routes. History saves every five seconds and on normal shutdown. The previous image remains in the background while the new map loads.
+
+On **Map**, choose a **World** preset and **Dimension**, then tap **Confirm**. Assign a different preset to each save. The package includes World 1, World 2 and World 3; custom names and more presets can be configured with the helper below. Confirm again after loading a world, and choose the destination dimension when using a portal. Automatic save and dimension identification is unavailable because the game memory offsets have not been verified. See [exploration history](docs/features/exploration.md) for storage limits and setup.
+
+### Waypoints
+
+Open **Waypoints** and tap **Base**, **Village**, **Mine** or **Place** to mark your current position. Select a saved row to navigate there. The arrow points relative to the direction you face, with horizontal distance in blocks and a separate height difference. The selected destination also appears on Map. **Stop** ends navigation; **Delete** removes the selected waypoint.
+
+Waypoints and active destinations are stored separately per confirmed world and dimension. Up to 64 markers are supported per map; repeated labels receive numbers. See [waypoint controls and storage](docs/features/waypoints.md).
+
+### Build projects
+
+Open **Projects**, create a list, and add building materials from the picker or your held hotbar item. Tap a row and adjust its required quantity with **±1**, **±16** and **±64**. For example, track 128 cobblestone, 32 oak planks and 16 glass.
+
+The app totals all 36 inventory slots and shows what remains to collect, keeping item variants separate. Unreadable inventory shows unknown counts. You can create eight projects with up to 24 materials each. Lists save on each edit. Names use presets because the current runtime has no keyboard input; custom names can be edited in the saved JSON. See [build project controls](docs/features/build-projects.md).
+
+### Persistent storage and world names
+
+Linux defaults to `$XDG_DATA_HOME/minecraft-companion`, or `$HOME/.local/share/minecraft-companion`. Android requires an absolute directory writable by Eden, such as `/sdcard/Android/data/dev.igawa6.edenduo/files/dualscreen/user/0100D71004694000/companion`. Without a writable directory, the app keeps changes for the session and displays its storage status.
+
+The runtime passes the installed `dualscreen/manifest.json` to the native module. Configure that manifest after installation, then reload the module or restart Minecraft:
+
+```sh
+python3 scripts/configure_companion.py \
+  --manifest "$HOME/.local/share/eden/load/0100D71004694000/Minecraft/dualscreen/manifest.json" \
+  --world "Survival" --world "Creative" \
+  --data-directory "$HOME/.local/share/minecraft-companion"
+```
+
+For Android, edit a local copy of the installed manifest with the device's absolute storage path, then copy it back. `scripts/thor.sh install` configures that path automatically. Configuration belongs to the installed copy and must be restored after reinstalling the package. Companion files contain markers, lists, terrain colors and routes; they do not modify Minecraft saves.
 
 ### Controls and status messages
 
-Tap **Inventory** or **Map** at the top to switch tabs. You can also swipe left on the inventory page to open the map, or swipe right on the map page to return.
+Tap **Inventory**, **Map**, **Waypoints** or **Projects** at the top to switch tabs. You can also swipe left on the inventory page to open the map, or swipe right on the map page to return.
 
 Until a valid inventory has been read, the app displays **Waiting for a world** with a diagnostic message. This may take a moment while a world is loading. The map page displays **No map yet** when map data is not yet available.
 
@@ -71,7 +104,7 @@ Until a valid inventory has been read, the app displays **Waiting for a world** 
 
 - The inventory is a display only: moving items, selecting a hotbar slot by touch, managing chests, and crafting are not supported.
 - The offhand slot is not shown. Equipment and durability are unavailable for the experimental 1.26.13 layout.
-- The map shows loaded terrain around the player, without saved exploration history or custom markers. It is not a cave map.
+- The map is a surface map, with remembered terrain only in areas the companion observed. It is not a cave map. World and dimension selection requires manual confirmation; presets must match the actual save.
 - The map is implemented only for Minecraft 1.2.12. Nether behavior has not been tested; the current heightmap may show the roof there.
 - Item icons come from the game's vanilla resource packs. Items from custom packs may therefore have no icon.
 
@@ -90,7 +123,7 @@ Use Eden Duo **1.1.0 with runtime 18 or later**. The module accepts only the ful
 2. In Eden Duo, long-press Minecraft and choose **Add-ons → Install → Dual screen mods**. Select the ZIP file.
 3. Disable the Minecraft update in **Add-ons** to use the tested 1.2.12 base game.
 4. Launch Minecraft and open a world. The bottom screen first displays **Waiting for a world**, then your inventory.
-5. Open **Map** to see the map, coordinates, and heading.
+5. Open **Map**, choose the matching world preset and dimension, and tap **Confirm** to record exploration and enable **Waypoints**. Use **Projects** for material lists. Configure writable storage on Android as described above.
 
 ## Building
 
@@ -119,7 +152,7 @@ Game files, emulator keys such as `prod.keys` and `title.keys`, passwords, and a
 
 | Directory | Contents |
 |---|---|
-| `native/` | The C++ module: memory reader (`mc_reader`), map (`mc_map`), icons and font (`mc_assets`, `mc_zip`), item names (`mc_names`), and research console (`mc_debug`). Also includes the required ABI headers and third-party libraries. |
+| `native/` | The C++ module: memory reader (`mc_reader`), map and saved exploration (`mc_map`, `mc_exploration`), waypoints (`mc_waypoints`), build projects (`mc_projects`), icons and font (`mc_assets`, `mc_zip`), item names (`mc_names`), and research console (`mc_debug`). Also includes the required ABI headers and third-party libraries. |
 | `package/` | `package.json`, `dualscreen/manifest.json` (bottom-screen pages), and `dualscreen/mc_font.txt` (a reference to the game's font) |
 | `scripts/` | Building, installation, and testing on desktop and the Thor |
 | `research/` | Analysis scripts for the game executable and resource packs |

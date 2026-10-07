@@ -22,6 +22,28 @@ All scripts read their machine-specific paths from `local.env` (copy `local.env.
 
 After `scripts/build.sh` and `scripts/install_desktop.sh`, `scripts/mc.sh cmd reload` loads the new module into the running game.
 
+## Companion feature setup and checks
+
+The installed manifest's top-level fields configure world presets and storage. Use
+`scripts/configure_companion.py --manifest <installed-manifest> --world Survival --world Creative
+--data-directory <absolute-directory>`, then reload the module. On Map, select the actual save
+preset and dimension and press Confirm. The package supplies three default World presets.
+`scripts/thor.sh install` supplies the writable Android companion directory automatically;
+installation through Eden's ZIP importer requires configuring that path separately.
+
+Run `ctest --test-dir build/linux --output-on-failure` for inventory, waypoint, project and
+exploration fixtures, and `python3 -m unittest discover -s tests` for packaging, configuration
+and manifest navigation checks. `scripts/verify_release.py dist/0100D71004694000.dsmod.zip`
+checks both platform modules and the complete installation archive.
+
+Desktop validation covers four-tab touch navigation, waypoint creation, the direction arrow,
+the 128 cobblestone / 32 oak planks / 16 glass example, route toggling, background capture,
+world/dimension confirmation and persistence after module reload. Use an isolated
+`data_directory` when validating so fixture markers and lists stay out of normal companion data.
+Fixtures also exercise unloaded terrain, stale worker results, inventory variants and unknown
+counts. The Android module is cross-compiled and package-validated; handheld runtime validation
+of these new features remains separate.
+
 ## Research console in the module
 
 `native/mc_debug.cpp` reads commands from `user:mcdbg.txt` (`<Eden data>/dualscreen/user/0100D71004694000/mcdbg.txt`) whenever the file changes, and writes `mcdbg:` lines to the Eden log. It works on the handheld too (`scripts/thor.sh dbg "inv"`, then `scripts/thor.sh mcdbg`).
