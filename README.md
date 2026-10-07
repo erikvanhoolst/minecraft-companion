@@ -1,57 +1,126 @@
-# Minecraft inventory companion voor Eden Duo
+# Minecraft inventory and map companion for Eden Duo
 
 [![CI](https://github.com/erikvanhoolst/minecraft-companion/actions/workflows/ci.yml/badge.svg)](https://github.com/erikvanhoolst/minecraft-companion/actions/workflows/ci.yml)
 
-**[Download de nieuwste release](https://github.com/erikvanhoolst/minecraft-companion/releases/latest)** · [Directe download van het installatiepakket](https://github.com/erikvanhoolst/minecraft-companion/releases/latest/download/0100D71004694000.dsmod.zip)
+**[Download the latest release](https://github.com/erikvanhoolst/minecraft-companion/releases/latest)** · [Download the installation package directly](https://github.com/erikvanhoolst/minecraft-companion/releases/latest/download/0100D71004694000.dsmod.zip)
 
-Een companion voor [Eden Duo](https://github.com/igawa6/eden-duo), de Switch-emulator voor Android-handhelds met twee schermen zoals de AYN Thor. Terwijl Minecraft op het bovenste scherm draait, toont het onderste scherm live je inventory: bovenaan armor, health, lucht en honger zoals de HUD van de game ze tekent, daaronder de 27 vakken van de hoofdinventory en de 9 hotbar-vakken met het geselecteerde vak, de iconen, de aantallen en de naam van het geselecteerde item zoals de game die toont, in het lettertype van de game.
+This companion app for [Eden Duo](https://github.com/igawa6/eden-duo) displays your Minecraft inventory and a map on the second screen. Eden Duo is a Nintendo Switch emulator for Android handhelds with two screens, such as the AYN Thor. While you keep playing on the top screen, the bottom screen shows what you are carrying, your character's status, and where you are.
 
-Een tweede tab, **Map**, toont de wereld rond de speler van bovenaf, zoals de kaart in de game ze tekent: elk blok in de kaartkleur die de game er zelf aan geeft, met schaduw naar hoogte en waterdiepte, op het kaartpapier van de game met de spelermarker in de kijkrichting. Ernaast staan de coördinaten (zoals "Show Coordinates" in de game ze toont) en de kijkrichting; met + en - zoom je tussen 64, 128 en 256 blokken breed. Wisselen tussen de tabs kan met de knoppen bovenaan of door over het scherm te vegen.
+Eden Duo loads the app as a companion package (`.dsmod.zip`). A small C++ module reads data from the running game's memory, and a JSON manifest defines the layout on the bottom screen. Normal use only displays information and does not modify your inventory or world.
 
-Het is geen aanpassing van de game. Eden Duo laadt het als companion-package (`.dsmod.zip`) met een pagina-indeling in JSON en een kleine native module in C++. Die module leest het geheugen van de draaiende game. Het package bevat geen spelbestanden: de iconen, de HUD-plaatjes, het lettertype, de itemnamen, de kaartkleuren en het kaartpapier komen uit je eigen game.
+The installation package contains no Minecraft game files. Icons, HUD sprites, the font, item names, map colors, and map paper are read from your own game while you play.
 
-## Ondersteunde versies
+## Screenshots
 
-| Minecraft | Build | Status |
+| Inventory tab | Map tab |
+|---|---|
+| ![Inventory showing item stacks and counts, player status, and the selected Birch Wood item](assets/screenshots/inventory-with-items.png) | ![Map tab showing terrain, the player marker, coordinates, heading, and zoom controls](assets/screenshots/map.png) |
+
+Captured from Minecraft 1.2.12 running in Eden Duo's desktop test environment. The inventory screenshot shows an earlier layout, before the tab buttons were added.
+
+## Features
+
+### Inventory
+
+The **Inventory** tab provides a live overview of all 36 inventory slots:
+
+- **Main inventory:** 27 slots in three rows of nine, with the nine hotbar slots underneath.
+- **Items and counts:** each occupied slot shows its item icon. Stacks of two or more items show their count in the bottom-right corner; empty slots remain blank.
+- **Active selection:** a border highlights the selected hotbar slot. When you select another slot in Minecraft, the highlight follows on the second screen.
+- **Item name:** the selected item's name appears below the grid. Supported variants account for details such as wood type, color, or potion type.
+- **Minecraft styling:** text uses the game's font, with a shadow behind names and counts. Block icons are displayed as flat textures.
+
+Tab labels and item names are currently in English. Names come from your game's `texts/en_US.lang`, so the app does not automatically follow Minecraft's language setting. If a translation is missing, the module derives a readable name from the internal item identifier.
+
+### Player status
+
+Above the inventory, Minecraft-style HUD indicators show:
+
+- **Health:** ten hearts, including half hearts.
+- **Hunger:** ten food icons, including partially filled icons.
+- **Armor:** the total protection provided by your equipped armor, shown as armor icons.
+- **Air supply:** ten bubbles that pop and disappear as your air supply decreases.
+
+These values are available for Minecraft **1.2.12**. If a value cannot be read reliably, the app hides the corresponding HUD row.
+
+### Map and navigation
+
+The **Map** tab shows a top-down view of the terrain around your character:
+
+- **Moving map:** the map follows your position and uses the chunks Minecraft has loaded into memory. North is at the top.
+- **In-game map colors:** each block uses its own map color, with lighter and darker shades for height differences and water depth.
+- **Player marker:** the marker on the map paper rotates to match the direction you are facing.
+- **Coordinates:** X, Y, and Z appear beside the map. Y is measured at your feet, matching Minecraft's coordinate display.
+- **Heading:** the app shows one of eight compass directions, such as north, east, or southwest. On-screen labels are in English.
+- **Zoom:** tap **+** to zoom in and **−** to zoom out. The map covers 64 × 64, 128 × 128, or 256 × 256 blocks; the default is 128 × 128.
+
+The map is rendered only while its tab is visible. Moving and zooming request a new image; while you stand still, the map also refreshes periodically, approximately once per second at 60 updates per second. The previous image remains in the background while the new map loads.
+
+### Controls and status messages
+
+Tap **Inventory** or **Map** at the top to switch tabs. You can also swipe left on the inventory page to open the map, or swipe right on the map page to return.
+
+Until a valid inventory has been read, the app displays **Waiting for a world** with a diagnostic message. This may take a moment while a world is loading. The map page displays **No map yet** when map data is not yet available.
+
+### Limitations
+
+- The inventory is a display only: moving items, selecting a hotbar slot by touch, managing chests, and crafting are not supported.
+- The armor indicator shows a total score; there are no separate equipment slots, offhand slot, or tool durability bars.
+- The map shows loaded terrain around the player, without saved exploration history or custom markers. It is not a cave map.
+- The map is implemented only for Minecraft 1.2.12. Nether behavior has not been tested; the current heightmap may show the roof there.
+- Item icons come from the game's vanilla resource packs. Items from custom packs may therefore have no icon.
+
+## Supported versions
+
+| Minecraft | Build ID prefix | Status |
 |---|---|---|
-| 1.2.12 (basisgame zonder update) | `D8B7E605E809E80C` | Werkt. Inventory getest op de AYN Thor en de pc; armor, health, lucht, honger, itemnamen en de kaart getest op de pc |
-| 1.26.13 (update v148) | `53E6D516A4DA5CD0` | Niet getest: de game draait niet in Eden Duo 1.1.0. Zonder de balken bovenaan en zonder kaart |
+| 1.2.12 (base game without updates) | `D8B7E605E809E80C` | Inventory tested on the AYN Thor and desktop. Armor, health, air, hunger, item names, and the map tested on desktop. |
+| 1.26.13 (update v148) | `53E6D516A4DA5CD0` | Experimental memory layout, not tested in a running world. This game version does not run on the handheld with Eden Duo 1.1.0 and renders a black screen on desktop. HUD indicators and the map are unavailable for this build. |
 
-Eden Duo 1.1.0 (runtime 18) of nieuwer.
+Use Eden Duo **1.1.0 with runtime 18 or later**. The module accepts only the full build IDs recorded in the source code; other Minecraft updates are not automatically supported. Use the tested 1.2.12 base game for normal play.
 
-## Installeren
+## Installation
 
-1. Download **`0100D71004694000.dsmod.zip`** van [GitHub Releases](https://github.com/erikvanhoolst/minecraft-companion/releases/latest), of bouw het package zelf (zie hieronder). Kies de installatiezip bij de release-assets.
-2. In Eden Duo: houd Minecraft ingedrukt, kies **Add-ons**, **Install**, **Dual screen mods** en kies de zip. Met de Thor via USB aangesloten kan het ook met `scripts/thor.sh install`.
-3. Zet de Minecraft-update uit in Add-ons zolang 1.26.13 niet draait.
-4. Start Minecraft en open een wereld. Het onderste scherm toont eerst "WAITING FOR A WORLD" en daarna je inventory.
+1. Download **`0100D71004694000.dsmod.zip`** from [GitHub Releases](https://github.com/erikvanhoolst/minecraft-companion/releases/latest), or build the package yourself (see below). Choose the installation package from the release assets.
+2. In Eden Duo, long-press Minecraft and choose **Add-ons → Install → Dual screen mods**. Select the ZIP file.
+3. Disable the Minecraft update in **Add-ons** to use the tested 1.2.12 base game.
+4. Launch Minecraft and open a world. The bottom screen first displays **Waiting for a world**, then your inventory.
+5. Open **Map** to see the map, coordinates, and heading.
 
-## Bouwen
+## Building
 
-Nodig: CMake, Ninja, een C++20-compiler, Python 3 en voor Android de NDK r28c.
+Requirements: CMake, Ninja, a C++20 compiler, Python 3, and Android NDK r28c for Android builds.
 
 ```sh
-cp local.env.example local.env   # paden aanpassen
-scripts/build.sh                 # Linux- en Android-module + dist/0100D71004694000.dsmod.zip
+cp local.env.example local.env   # then adjust the local paths
+scripts/build.sh all             # Linux and Android modules + installation package
 ```
 
-De ABI-headers van Eden Duo, nlohmann/json en stb_image zitten in `native/`, dus een Eden-checkout is niet nodig.
+The output is `dist/0100D71004694000.dsmod.zip`, containing modules for Linux x86_64 and Android arm64. You can also run `scripts/build.sh linux`, `scripts/build.sh android`, or `scripts/build.sh package` separately. The last command packages modules that have already been built; both modules must be present to produce a package for both platforms.
 
-## CI en releases
+The Eden Duo ABI headers, nlohmann/json, and stb_image are included in `native/`, so you do not need an Eden Duo source checkout to build the module. Desktop testing does require a suitable `eden-cli`. See the [development tools and testing instructions](docs/TOOLS.md) for installation, screenshots, and the research console.
 
-GitHub Actions bouwt en controleert het Linux- en Android-package bij pull requests en pushes naar `main`. Een versietag (bijvoorbeeld `v0.3.0`) bouwt en publiceert automatisch een GitHub Release met de installatiezip en `SHA256SUMS`. Zie [docs/RELEASING.md](docs/RELEASING.md) voor de controles en het publiceren van volgende versies.
+## CI and releases
 
-## Mappen
+GitHub Actions builds and checks the Linux and Android package for pull requests and pushes to `main`. A version tag (for example, `v0.3.0`) automatically builds and publishes a GitHub Release with the installation package and `SHA256SUMS` to verify the download. See the [release instructions](docs/RELEASING.md) for checks and publishing future versions.
 
-| Map | Inhoud |
+## Local files and sensitive data
+
+Keep machine-specific paths in `local.env`; Git ignores this file. `local.env.example` contains only example settings. Local `.env` files, key files, and the `build/` and `dist/` directories are also ignored. These rules apply to new files; files that are already tracked remain tracked.
+
+Game files, emulator keys such as `prod.keys` and `title.keys`, passwords, and access tokens do not belong in this repository or an installation package. Keep your own game files in a directory outside the repository. The module uses memory and game files provided by Eden Duo and does not need account credentials.
+
+## Repository layout
+
+| Directory | Contents |
 |---|---|
-| `native/` | De module: lezer (`mc_reader`), kaart (`mc_map`), iconen en lettertype (`mc_assets`, `mc_zip`), itemnamen (`mc_names`), onderzoeksconsole (`mc_debug`) |
-| `package/` | `package.json`, `dualscreen/manifest.json` (de pagina's op het onderste scherm) en `dualscreen/mc_font.txt` (verwijst naar het lettertype van de game) |
-| `scripts/` | Bouwen, installeren, testen op de pc en op de Thor |
-| `research/` | Analysescripts voor de game-executable en de resource packs |
-| `patches/` | Patches voor de desktopversie van Eden Duo om Minecraft op de pc te testen |
-| `docs/` | `NOTES.md` (geheugenindeling, iconen), `TOOLS.md` (tools en testen), `PLAN.md` (oorspronkelijk plan) |
+| `native/` | The C++ module: memory reader (`mc_reader`), map (`mc_map`), icons and font (`mc_assets`, `mc_zip`), item names (`mc_names`), and research console (`mc_debug`). Also includes the required ABI headers and third-party libraries. |
+| `package/` | `package.json`, `dualscreen/manifest.json` (bottom-screen pages), and `dualscreen/mc_font.txt` (a reference to the game's font) |
+| `scripts/` | Building, installation, and testing on desktop and the Thor |
+| `research/` | Analysis scripts for the game executable and resource packs |
+| `patches/` | Patches for the desktop version of Eden Duo to test Minecraft on a PC |
+| `docs/` | [Technical notes](docs/NOTES.md), [development tools](docs/TOOLS.md), the [original plan](docs/PLAN.md), and [release instructions](docs/RELEASING.md). The plan also includes ideas that have not yet been implemented. |
 
-## Licentie
+## License
 
-GPL-3.0-or-later, zoals Eden Duo en de Eden Duo companions waaruit de ABI-headers en de package-builder komen.
+The project code is licensed under **GPL-3.0-or-later**, like Eden Duo and the companion packages that supplied the ABI headers and package builder. See [LICENSE](LICENSE). Bundled third-party libraries retain their own licenses, as stated in their source files.
