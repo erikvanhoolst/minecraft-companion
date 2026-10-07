@@ -10,7 +10,15 @@
 //   inv.slot<i>.icon     "module:mc:icon/<icon_name>/<frame>" or "module:mc:item/<name>/<aux>" or ""
 //   inv.slot<i>.id       item identifier, e.g. "log", "tile.cobblestone", "minecraft:diamond_sword"
 //   inv.slot<i>.name     the name the game shows for the item, e.g. "Oak Wood"
+//   inv.slot<i>.dur_ok   1 when durability is readable for this damageable item
+//   inv.slot<i>.dur      remaining durability percent (rounded up), -1 = unavailable
+//   inv.slot<i>.remaining, inv.slot<i>.max_damage   remaining uses and maximum durability
 //   inv.slot_sel_name    inv.slot<selected>.name
+//   inv.selected_ok      1 when the selected hotbar index was read reliably
+//   inv.tool_durability  selected item's "remaining / maximum (percent%)", or ""
+//   inv.pickaxe_low      selected pickaxe has at most 10% durability remaining
+//   equip.ready         consistent snapshot of the four worn armor slots
+//   equip.slot<i>.*     same fields as inventory slots; 0 helmet, 1 chestplate, 2 legs, 3 boots
 //   inv.diag             short text explaining why inv.ready is 0
 //   player.health, player.health_max, player.hunger, player.armor, player.air, player.air_max
 //                        the local player's state as the game's HUD shows it (half icons:
@@ -78,6 +86,8 @@ struct Layout {
     u32 item_description_id{};  // std::string mDescriptionId ("item.apple", "item.log")
     u32 block_description_id{}; // std::string mDescriptionId in the stack's block ("tile.log"):
                                 // a block item is named after its block, as the game does
+    u32 item_max_damage{};      // u16 Item::mMaxDamage; 0 = unknown
+    bool damage_in_aux{};      // this build stores damage in the stack's aux (not NBT)
 
     // The local player's HUD state
     u32 player_attributes{};  // BaseAttributeMap* inside the player: an unordered_map<
@@ -108,6 +118,7 @@ struct Layout {
 };
 
 constexpr std::size_t SlotCount = 36;
+constexpr std::size_t ArmorSlotCount = 4;
 constexpr std::size_t HudIcons = 10;
 
 bool SupportsBuildHex(const char* build_hex);
@@ -137,6 +148,9 @@ private:
         std::string id;
         std::string name;
         std::string icon;
+        int max_damage{};
+        int remaining{};
+        int durability{-1};
     };
     struct Stat {
         bool ok{};
@@ -145,6 +159,8 @@ private:
     };
     struct PlayerStats {
         Stat health, hunger, armor, air;
+        bool equipment_ok{};
+        std::array<Slot, ArmorSlotCount> equipment{};
     };
 
     bool Resolve(const EdenDsmodHostApi& host);
@@ -152,14 +168,15 @@ private:
                            u64& item_count, u64& player_out) const;
     bool ReadSlots(const EdenDsmodHostApi& host, std::array<Slot, SlotCount>& slots,
                    int& selected);
+    bool DecodeSlot(const EdenDsmodHostApi& host, const u8* raw, Slot& slot);
     bool ReadString(const EdenDsmodHostApi& host, u64 at, std::string& out) const;
-    void NameSlots(const EdenDsmodHostApi& host, std::array<Slot, SlotCount>& slots,
-                   const mc_assets::Library* assets);
+    void NameSlot(const EdenDsmodHostApi& host, Slot& slot, const mc_assets::Library* assets);
     PlayerStats ReadPlayer(const EdenDsmodHostApi& host);
     bool ReadAttribute(const EdenDsmodHostApi& host, u64 attribute, u64& cached, Stat& out);
     void Publish(const EdenDsmodHostApi& host, const std::array<Slot, SlotCount>& slots,
                  int selected, bool ready, const char* diag);
     void PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stats);
+    void PublishSlot(const EdenDsmodHostApi& host, const char* prefix, const Slot& slot, bool ready);
 
     const Layout* layout{};
     u64 main_base{};

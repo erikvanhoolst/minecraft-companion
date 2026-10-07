@@ -51,3 +51,12 @@ endif()
 if(ANDROID)
     target_link_options(mc_companion PRIVATE "-Wl,--exclude-libs,ALL")
 endif()
+
+include(CTest)
+if(BUILD_TESTING AND NOT ANDROID)
+    add_executable(mc_reader_tests tests/test_reader.cpp
+        native/mc_reader.cpp native/mc_assets.cpp native/mc_names.cpp native/mc_zip.cpp)
+    target_compile_features(mc_reader_tests PRIVATE cxx_std_20)
+    target_include_directories(mc_reader_tests PRIVATE native native/sdk native/third_party)
+    add_test(NAME mc_reader COMMAND mc_reader_tests)
+endif()

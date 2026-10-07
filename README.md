@@ -28,7 +28,12 @@ The **Inventory** tab provides a live overview of all 36 inventory slots:
 - **Items and counts:** each occupied slot shows its item icon. Stacks of two or more items show their count in the bottom-right corner; empty slots remain blank.
 - **Active selection:** a border highlights the selected hotbar slot. When you select another slot in Minecraft, the highlight follows on the second screen.
 - **Item name:** the selected item's name appears below the grid. Supported variants account for details such as wood type, color, or potion type.
+- **Equipment:** separate helmet, chestplate, leggings, and boots slots below the grid, with an explicit empty state and each equipped item's remaining durability.
+- **Wear:** small green, amber, or red durability bars on damageable items in the inventory and hotbar. The selected tool also shows remaining uses, maximum durability, and a percentage.
+- **Pickaxe warning:** a quiet amber line, **Pickaxe nearly broken**, appears while your selected pickaxe has 10% or less durability remaining. Switching tools, repairing it, or removing it clears the warning; there is no popup or sound.
 - **Minecraft styling:** text uses the game's font, with a shadow behind names and counts. Block icons are displayed as flat textures.
+
+Equipment and durability are available for Minecraft **1.2.12**. Unreadable data stays hidden; the warning only uses a reliably read hotbar selection.
 
 Tab labels and item names are currently in English. Names come from your game's `texts/en_US.lang`, so the app does not automatically follow Minecraft's language setting. If a translation is missing, the module derives a readable name from the internal item identifier.
 
@@ -65,7 +70,7 @@ Until a valid inventory has been read, the app displays **Waiting for a world** 
 ### Limitations
 
 - The inventory is a display only: moving items, selecting a hotbar slot by touch, managing chests, and crafting are not supported.
-- The armor indicator shows a total score; there are no separate equipment slots, offhand slot, or tool durability bars.
+- The offhand slot is not shown. Equipment and durability are unavailable for the experimental 1.26.13 layout.
 - The map shows loaded terrain around the player, without saved exploration history or custom markers. It is not a cave map.
 - The map is implemented only for Minecraft 1.2.12. Nether behavior has not been tested; the current heightmap may show the roof there.
 - Item icons come from the game's vanilla resource packs. Items from custom packs may therefore have no icon.
@@ -75,7 +80,7 @@ Until a valid inventory has been read, the app displays **Waiting for a world** 
 | Minecraft | Build ID prefix | Status |
 |---|---|---|
 | 1.2.12 (base game without updates) | `D8B7E605E809E80C` | Inventory tested on the AYN Thor and desktop. Armor, health, air, hunger, item names, and the map tested on desktop. |
-| 1.26.13 (update v148) | `53E6D516A4DA5CD0` | Experimental memory layout, not tested in a running world. This game version does not run on the handheld with Eden Duo 1.1.0 and renders a black screen on desktop. HUD indicators and the map are unavailable for this build. |
+| 1.26.13 (update v148) | `53E6D516A4DA5CD0` | Experimental memory layout, not tested in a running world. This game version does not run on the handheld with Eden Duo 1.1.0 and renders a black screen on desktop. HUD indicators, equipment, durability, and the map are unavailable for this build. |
 
 Use Eden Duo **1.1.0 with runtime 18 or later**. The module accepts only the full build IDs recorded in the source code; other Minecraft updates are not automatically supported. Use the tested 1.2.12 base game for normal play.
 

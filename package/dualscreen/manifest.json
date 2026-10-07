@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft (Bedrock Edition, Switch) second-screen companion with two tabs. Inventory: the player's armor, health, air and hunger as the game's HUD draws them, above the 9x4 inventory grid (27 main slots above the 9 hotbar slots), item icons decoded by the native module from the player's own romfs resource packs, stack counts, the selected hotbar slot and its name as the game shows it, in the game's own font. Map: the chunks the game holds around the player, drawn by the module the way the game's map item draws them (each block's own map colour, shaded by height and water depth), on the game's map paper with its player marker, plus the player's coordinates and heading. The package ships no game assets.",
+ "_about": "Minecraft (Bedrock Edition, Switch) second-screen companion with two tabs. Inventory: the player's armor, health, air and hunger as the game's HUD draws them, above the 9x4 inventory grid (27 main slots above the 9 hotbar slots), separate helmet, chestplate, leggings and boots below the grid, durability bars for damageable items and a quiet warning at 10% or less durability on the selected pickaxe (Minecraft 1.2.12), item icons decoded by the native module from the player's own romfs resource packs, stack counts, the selected hotbar slot and its name as the game shows it, in the game's own font. Map: the chunks the game holds around the player, drawn by the module the way the game's map item draws them (each block's own map colour, shaded by height and water depth), on the game's map paper with its player marker, plus the player's coordinates and heading. The package ships no game assets.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -394,7 +394,8 @@
      "bg": "#00000000",
      "color": "#FFFFFFFF",
      "frame": 4,
-     "x_bind": "ui.sel_x"
+     "x_bind": "ui.sel_x",
+     "need_bind": "inv.selected_ok"
     },
     {
      "type": "image",
@@ -452,7 +453,7 @@
      "type": "label",
      "rect": [
       624,
-      812,
+      794,
       0,
       0
      ],
@@ -465,7 +466,7 @@
      "type": "label",
      "rect": [
       620,
-      808,
+      790,
       0,
       0
      ],
@@ -487,6 +488,648 @@
      "text_scale": 2,
      "align": "right",
      "color": "#FF505860"
+    },
+    {
+     "type": "bar",
+     "rect": [
+      80,
+      362,
+      88,
+      6
+     ],
+     "bind": "inv.slot{i+9}.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFB86A55",
+     "frame": 0,
+     "need_bind": "inv.slot{i+9}.dur_ok",
+     "hide_bind": "inv.slot{i+9}.dur",
+     "keep_min": 0,
+     "keep_max": 10,
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124
+    },
+    {
+     "type": "bar",
+     "rect": [
+      80,
+      362,
+      88,
+      6
+     ],
+     "bind": "inv.slot{i+9}.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFC5A45B",
+     "frame": 0,
+     "need_bind": "inv.slot{i+9}.dur_ok",
+     "hide_bind": "inv.slot{i+9}.dur",
+     "keep_min": 11,
+     "keep_max": 25,
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124
+    },
+    {
+     "type": "bar",
+     "rect": [
+      80,
+      362,
+      88,
+      6
+     ],
+     "bind": "inv.slot{i+9}.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FF79A65A",
+     "frame": 0,
+     "need_bind": "inv.slot{i+9}.dur_ok",
+     "hide_bind": "inv.slot{i+9}.dur",
+     "keep_min": 26,
+     "keep_max": 100,
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124
+    },
+    {
+     "type": "bar",
+     "rect": [
+      80,
+      750,
+      88,
+      6
+     ],
+     "bind": "inv.slot{i}.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFB86A55",
+     "frame": 0,
+     "need_bind": "inv.slot{i}.dur_ok",
+     "hide_bind": "inv.slot{i}.dur",
+     "keep_min": 0,
+     "keep_max": 10,
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124
+    },
+    {
+     "type": "bar",
+     "rect": [
+      80,
+      750,
+      88,
+      6
+     ],
+     "bind": "inv.slot{i}.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFC5A45B",
+     "frame": 0,
+     "need_bind": "inv.slot{i}.dur_ok",
+     "hide_bind": "inv.slot{i}.dur",
+     "keep_min": 11,
+     "keep_max": 25,
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124
+    },
+    {
+     "type": "bar",
+     "rect": [
+      80,
+      750,
+      88,
+      6
+     ],
+     "bind": "inv.slot{i}.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FF79A65A",
+     "frame": 0,
+     "need_bind": "inv.slot{i}.dur_ok",
+     "hide_bind": "inv.slot{i}.dur",
+     "keep_min": 26,
+     "keep_max": 100,
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124
+    },
+    {
+     "_note": "Remaining uses for the selected tool; empty for non-damageable or unreadable items.",
+     "type": "label",
+     "rect": [
+      620,
+      836,
+      0,
+      0
+     ],
+     "bind_text": "inv.tool_durability",
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FF9AA4B0"
+    },
+    {
+     "_note": "Quiet, persistent warning while the selected pickaxe has at most 10% remaining; no popup or sound.",
+     "type": "label",
+     "rect": [
+      620,
+      874,
+      0,
+      0
+     ],
+     "text": "Pickaxe nearly broken",
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFC5A45B",
+     "need_bind": "inv.pickaxe_low"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      910,
+      0,
+      0
+     ],
+     "text": "Helmet",
+     "text_scale": 3,
+     "color": "#FF9AA4B0",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      68,
+      942,
+      252,
+      92
+     ],
+     "bg": "#FF262626",
+     "color": "#FF4A4A4A",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "image",
+     "rect": [
+      80,
+      948,
+      72,
+      72
+     ],
+     "src_bind": "equip.slot0.icon",
+     "color": "#FFFFFFFF",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      194,
+      970,
+      0,
+      0
+     ],
+     "text": "Empty",
+     "text_scale": 3,
+     "color": "#FF707880",
+     "need_bind": "equip.ready",
+     "hide_bind": "equip.slot0.count",
+     "keep_max": 0
+    },
+    {
+     "type": "value",
+     "rect": [
+      298,
+      962,
+      0,
+      0
+     ],
+     "bind": "equip.slot0.dur",
+     "suffix": "%",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFBBC3CB",
+     "need_bind": "equip.slot0.dur_ok"
+    },
+    {
+     "type": "bar",
+     "rect": [
+      172,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot0.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFB86A55",
+     "frame": 0,
+     "need_bind": "equip.slot0.dur_ok",
+     "hide_bind": "equip.slot0.dur",
+     "keep_min": 0,
+     "keep_max": 10
+    },
+    {
+     "type": "bar",
+     "rect": [
+      172,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot0.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFC5A45B",
+     "frame": 0,
+     "need_bind": "equip.slot0.dur_ok",
+     "hide_bind": "equip.slot0.dur",
+     "keep_min": 11,
+     "keep_max": 25
+    },
+    {
+     "type": "bar",
+     "rect": [
+      172,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot0.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FF79A65A",
+     "frame": 0,
+     "need_bind": "equip.slot0.dur_ok",
+     "hide_bind": "equip.slot0.dur",
+     "keep_min": 26,
+     "keep_max": 100
+    },
+    {
+     "type": "label",
+     "rect": [
+      356,
+      910,
+      0,
+      0
+     ],
+     "text": "Chestplate",
+     "text_scale": 3,
+     "color": "#FF9AA4B0",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      356,
+      942,
+      252,
+      92
+     ],
+     "bg": "#FF262626",
+     "color": "#FF4A4A4A",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "image",
+     "rect": [
+      368,
+      948,
+      72,
+      72
+     ],
+     "src_bind": "equip.slot1.icon",
+     "color": "#FFFFFFFF",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      482,
+      970,
+      0,
+      0
+     ],
+     "text": "Empty",
+     "text_scale": 3,
+     "color": "#FF707880",
+     "need_bind": "equip.ready",
+     "hide_bind": "equip.slot1.count",
+     "keep_max": 0
+    },
+    {
+     "type": "value",
+     "rect": [
+      586,
+      962,
+      0,
+      0
+     ],
+     "bind": "equip.slot1.dur",
+     "suffix": "%",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFBBC3CB",
+     "need_bind": "equip.slot1.dur_ok"
+    },
+    {
+     "type": "bar",
+     "rect": [
+      460,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot1.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFB86A55",
+     "frame": 0,
+     "need_bind": "equip.slot1.dur_ok",
+     "hide_bind": "equip.slot1.dur",
+     "keep_min": 0,
+     "keep_max": 10
+    },
+    {
+     "type": "bar",
+     "rect": [
+      460,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot1.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFC5A45B",
+     "frame": 0,
+     "need_bind": "equip.slot1.dur_ok",
+     "hide_bind": "equip.slot1.dur",
+     "keep_min": 11,
+     "keep_max": 25
+    },
+    {
+     "type": "bar",
+     "rect": [
+      460,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot1.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FF79A65A",
+     "frame": 0,
+     "need_bind": "equip.slot1.dur_ok",
+     "hide_bind": "equip.slot1.dur",
+     "keep_min": 26,
+     "keep_max": 100
+    },
+    {
+     "type": "label",
+     "rect": [
+      644,
+      910,
+      0,
+      0
+     ],
+     "text": "Leggings",
+     "text_scale": 3,
+     "color": "#FF9AA4B0",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      644,
+      942,
+      252,
+      92
+     ],
+     "bg": "#FF262626",
+     "color": "#FF4A4A4A",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "image",
+     "rect": [
+      656,
+      948,
+      72,
+      72
+     ],
+     "src_bind": "equip.slot2.icon",
+     "color": "#FFFFFFFF",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      770,
+      970,
+      0,
+      0
+     ],
+     "text": "Empty",
+     "text_scale": 3,
+     "color": "#FF707880",
+     "need_bind": "equip.ready",
+     "hide_bind": "equip.slot2.count",
+     "keep_max": 0
+    },
+    {
+     "type": "value",
+     "rect": [
+      874,
+      962,
+      0,
+      0
+     ],
+     "bind": "equip.slot2.dur",
+     "suffix": "%",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFBBC3CB",
+     "need_bind": "equip.slot2.dur_ok"
+    },
+    {
+     "type": "bar",
+     "rect": [
+      748,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot2.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFB86A55",
+     "frame": 0,
+     "need_bind": "equip.slot2.dur_ok",
+     "hide_bind": "equip.slot2.dur",
+     "keep_min": 0,
+     "keep_max": 10
+    },
+    {
+     "type": "bar",
+     "rect": [
+      748,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot2.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFC5A45B",
+     "frame": 0,
+     "need_bind": "equip.slot2.dur_ok",
+     "hide_bind": "equip.slot2.dur",
+     "keep_min": 11,
+     "keep_max": 25
+    },
+    {
+     "type": "bar",
+     "rect": [
+      748,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot2.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FF79A65A",
+     "frame": 0,
+     "need_bind": "equip.slot2.dur_ok",
+     "hide_bind": "equip.slot2.dur",
+     "keep_min": 26,
+     "keep_max": 100
+    },
+    {
+     "type": "label",
+     "rect": [
+      932,
+      910,
+      0,
+      0
+     ],
+     "text": "Boots",
+     "text_scale": 3,
+     "color": "#FF9AA4B0",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      932,
+      942,
+      252,
+      92
+     ],
+     "bg": "#FF262626",
+     "color": "#FF4A4A4A",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "image",
+     "rect": [
+      944,
+      948,
+      72,
+      72
+     ],
+     "src_bind": "equip.slot3.icon",
+     "color": "#FFFFFFFF",
+     "need_bind": "equip.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1058,
+      970,
+      0,
+      0
+     ],
+     "text": "Empty",
+     "text_scale": 3,
+     "color": "#FF707880",
+     "need_bind": "equip.ready",
+     "hide_bind": "equip.slot3.count",
+     "keep_max": 0
+    },
+    {
+     "type": "value",
+     "rect": [
+      1162,
+      962,
+      0,
+      0
+     ],
+     "bind": "equip.slot3.dur",
+     "suffix": "%",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFBBC3CB",
+     "need_bind": "equip.slot3.dur_ok"
+    },
+    {
+     "type": "bar",
+     "rect": [
+      1036,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot3.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFB86A55",
+     "frame": 0,
+     "need_bind": "equip.slot3.dur_ok",
+     "hide_bind": "equip.slot3.dur",
+     "keep_min": 0,
+     "keep_max": 10
+    },
+    {
+     "type": "bar",
+     "rect": [
+      1036,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot3.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FFC5A45B",
+     "frame": 0,
+     "need_bind": "equip.slot3.dur_ok",
+     "hide_bind": "equip.slot3.dur",
+     "keep_min": 11,
+     "keep_max": 25
+    },
+    {
+     "type": "bar",
+     "rect": [
+      1036,
+      1006,
+      126,
+      6
+     ],
+     "bind": "equip.slot3.dur",
+     "max": 100,
+     "bg": "#FF151515",
+     "color": "#FF79A65A",
+     "frame": 0,
+     "need_bind": "equip.slot3.dur_ok",
+     "hide_bind": "equip.slot3.dur",
+     "keep_min": 26,
+     "keep_max": 100
     }
    ]
   },

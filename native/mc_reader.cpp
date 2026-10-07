@@ -84,6 +84,10 @@ constexpr Layout Layouts[] = {
         .player_selected = 0x1A18, // int in LocalPlayer, follows the hotbar (live diff)
         .item_description_id = 0x30, // std::string ("item.diamond_chestplate", "item.planks")
         .block_description_id = 0x10, // BlockLegacy: std::string ("tile.planks"), name at +0x28
+        // Item::getMaxDamage at main+0x12954B4: ldrh w0, [x0, #0x62]; ret.
+        // ItemInstance damage getter main+0x129E898 reads the aux at +0x18.
+        .item_max_damage = 0x62,
+        .damage_in_aux = true,
         // Actor::mAttributes: the map the HUD's hearts and hunger read. Health and hunger are
         // the static Attributes named "minecraft:health" and "minecraft:player.hunger"; writing
         // the current value moved the HUD (live).
@@ -357,58 +361,12 @@ bool Reader::ReadSlots(const EdenDsmodHostApi& host, std::array<Slot, SlotCount>
         return false;
     }
     for (std::size_t i = 0; i < SlotCount; ++i) {
-        const u8* s = a.data() + i * layout->stack_size;
-        if (layout->stack_has_vtable) {
-            u64 vptr{};
-            std::memcpy(&vptr, s, 8);
-            if (vptr != main_base + layout->vt_item_stack) {
-                diag = "slot vtable mismatch";
-                return false;
-            }
+        if (!DecodeSlot(host, a.data() + i * layout->stack_size, slots[i])) {
+            diag = "invalid inventory slot";
+            return false;
         }
-        Slot& out = slots[i];
-        out.count = s[layout->stack_count];
-        std::memcpy(&out.aux, s + layout->stack_aux, 2);
-        u64 item_handle{};
-        std::memcpy(&item_handle, s + layout->stack_item, 8);
-        out.item = 0;
-        out.block = 0;
-        out.id.clear();
-        out.name.clear();
-        out.icon.clear();
-        if (out.count == 0 || item_handle == 0)
-            continue;
-        // WeakPtr<Item>: handle -> SharedCounter { Item* ptr; ... } (verify); or a raw Item*
-        u64 item = item_handle;
-        if (!layout->item_is_direct && (!Read(host, item_handle, item) || !item))
-            continue;
-        out.item = item;
-        std::memcpy(&out.block, s + layout->stack_block, 8);
-        const auto printable = [](const std::string& t) {
-            return !t.empty() && std::all_of(t.begin(), t.end(), [](unsigned char c) {
-                return c > 0x20 && c < 0x7f;
-            });
-        };
-        if (layout->item_full_name) {
-            std::string name;
-            if (ReadString(host, item + layout->item_full_name, name) && printable(name))
-                out.id = name;
-        }
-        if (layout->item_icon_name) {
-            std::string icon;
-            int frame = 0;
-            if (ReadString(host, item + layout->item_icon_name, icon) && printable(icon)) {
-                if (layout->item_icon_frame)
-                    Read(host, item + layout->item_icon_frame, frame);
-                else
-                    frame = out.aux; // legacy builds index the texture array by the aux value
-                out.icon = "module:mc:icon/" + icon + "/" + std::to_string(frame);
-            }
-        }
-        if (out.icon.empty() && !out.id.empty())
-            out.icon = "module:mc:item/" + out.id + "/" + std::to_string(out.aux);
     }
-    selected = 0;
+    selected = -1;
     if (layout->player_selected && player) {
         s32 sel{};
         if (Read(host, player + layout->player_selected, sel) && sel >= 0 && sel < 9)
@@ -421,38 +379,89 @@ bool Reader::ReadSlots(const EdenDsmodHostApi& host, std::array<Slot, SlotCount>
     return true;
 }
 
-void Reader::NameSlots(const EdenDsmodHostApi& host, std::array<Slot, SlotCount>& slots,
-                       const mc_assets::Library* assets) {
-    // The language file loads with the icons (on the asset worker); until then the names are
-    // stand-ins and are not cached.
-    const bool lang = assets && assets->Loaded();
-    for (Slot& slot : slots) {
-        if (!slot.count || !slot.item)
-            continue;
-        const auto key = std::make_pair(slot.item, slot.aux);
-        if (const auto it = name_cache.find(key); it != name_cache.end()) {
-            slot.name = it->second;
-            continue;
-        }
-        std::string name;
-        if (lang && layout->item_description_id) {
-            // A block item takes its block's name ("tile.planks" + aux 5 = Dark Oak Wood
-            // Planks); its own description id is a generic "item.planks".
-            std::string description_id;
-            if (!(slot.block && layout->block_description_id &&
-                  ReadString(host, slot.block + layout->block_description_id, description_id) &&
-                  description_id.starts_with("tile.")))
-                ReadString(host, slot.item + layout->item_description_id, description_id);
-            name = assets->ItemName(description_id, slot.aux);
-        } else if (lang) {
-            name = assets->DisplayName(slot.id);
-        }
-        if (name.empty())
-            name = mc_names::Fallback(slot.id);
-        if (lang && name_cache.size() < 4096)
-            name_cache.emplace(key, name);
-        slot.name = std::move(name);
+bool Reader::DecodeSlot(const EdenDsmodHostApi& host, const u8* raw, Slot& slot) {
+    slot = Slot{};
+    if (layout->stack_has_vtable) {
+        u64 vptr{};
+        std::memcpy(&vptr, raw, 8);
+        if (vptr != main_base + layout->vt_item_stack)
+            return false;
     }
+    slot.count = raw[layout->stack_count];
+    if (!slot.count)
+        return true;
+    std::memcpy(&slot.aux, raw + layout->stack_aux, 2);
+    std::memcpy(&slot.item, raw + layout->stack_item, 8);
+    if (!slot.item || (!layout->item_is_direct &&
+                      (!Read(host, slot.item, slot.item) || !slot.item)))
+        return false;
+    std::memcpy(&slot.block, raw + layout->stack_block, 8);
+    if (layout->item_max_damage && layout->damage_in_aux) {
+        u16 maximum{};
+        if (Read(host, slot.item + layout->item_max_damage, maximum) && maximum > 0) {
+            slot.max_damage = maximum;
+            const int damage = static_cast<u16>(slot.aux);
+            if (damage <= maximum) {
+                slot.remaining = maximum - damage;
+                slot.durability = (slot.remaining * 100 + maximum - 1) / maximum;
+            }
+        }
+    }
+    const auto printable = [](const std::string& t) {
+        return !t.empty() && std::all_of(t.begin(), t.end(), [](unsigned char c) {
+            return c > 0x20 && c < 0x7f;
+        });
+    };
+    if (layout->item_full_name) {
+        std::string name;
+        if (ReadString(host, slot.item + layout->item_full_name, name) && printable(name))
+            slot.id = std::move(name);
+    }
+    // Damage is not a texture/name variant. Worn tools keep their ordinary icon and name.
+    const int variant = slot.max_damage > 0 ? 0 : slot.aux;
+    if (layout->item_icon_name) {
+        std::string icon;
+        int frame = 0;
+        if (ReadString(host, slot.item + layout->item_icon_name, icon) && printable(icon)) {
+            if (layout->item_icon_frame)
+                Read(host, slot.item + layout->item_icon_frame, frame);
+            else
+                frame = variant;
+            slot.icon = "module:mc:icon/" + icon + "/" + std::to_string(frame);
+        }
+    }
+    if (slot.icon.empty() && !slot.id.empty())
+        slot.icon = "module:mc:item/" + slot.id + "/" + std::to_string(variant);
+    return true;
+}
+
+void Reader::NameSlot(const EdenDsmodHostApi& host, Slot& slot, const mc_assets::Library* assets) {
+    if (!slot.count || !slot.item)
+        return;
+    // The language file loads on the asset worker; stand-in names are not cached.
+    const bool lang = assets && assets->Loaded();
+    const s16 variant = slot.max_damage > 0 ? 0 : slot.aux;
+    const auto key = std::make_pair(slot.item, variant);
+    if (const auto it = name_cache.find(key); it != name_cache.end()) {
+        slot.name = it->second;
+        return;
+    }
+    std::string name;
+    if (lang && layout->item_description_id) {
+        std::string description_id;
+        if (!(slot.block && layout->block_description_id &&
+              ReadString(host, slot.block + layout->block_description_id, description_id) &&
+              description_id.starts_with("tile.")))
+            ReadString(host, slot.item + layout->item_description_id, description_id);
+        name = assets->ItemName(description_id, variant);
+    } else if (lang) {
+        name = assets->DisplayName(slot.id);
+    }
+    if (name.empty())
+        name = mc_names::Fallback(slot.id);
+    if (lang && name_cache.size() < 4096)
+        name_cache.emplace(key, name);
+    slot.name = std::move(name);
 }
 
 bool Reader::ReadAttribute(const EdenDsmodHostApi& host, u64 attribute, u64& cached, Stat& out) {
@@ -494,10 +503,12 @@ bool Reader::ReadAttribute(const EdenDsmodHostApi& host, u64 attribute, u64& cac
 
 Reader::PlayerStats Reader::ReadPlayer(const EdenDsmodHostApi& host) {
     PlayerStats stats;
-    if (!player || !layout->player_attributes)
+    if (!player)
         return stats;
-    ReadAttribute(host, layout->attr_health, health_instance, stats.health);
-    ReadAttribute(host, layout->attr_hunger, hunger_instance, stats.hunger);
+    if (layout->player_attributes) {
+        ReadAttribute(host, layout->attr_health, health_instance, stats.health);
+        ReadAttribute(host, layout->attr_hunger, hunger_instance, stats.hunger);
+    }
 
     if (layout->player_entity_data) {
         u64 begin{}, end{};
@@ -525,36 +536,38 @@ Reader::PlayerStats Reader::ReadPlayer(const EdenDsmodHostApi& host) {
     }
 
     if (layout->player_armor) {
-        // Armor points are the sum of the worn ArmorItems' defense, as the HUD's armor row.
-        u64 begin{}, end{};
-        if (Read(host, player + layout->player_armor, begin) &&
-            Read(host, player + layout->player_armor + 8, end) && begin &&
-            end - begin == 4ULL * layout->stack_size) {
-            std::vector<u8> raw(4 * layout->stack_size);
-            if (ReadBytes(host, begin, raw.data(), raw.size())) {
+        // Read the vector and stacks twice; do not display a mix of old and new equipment.
+        std::array<u64, 3> vector{}, after{};
+        const std::size_t bytes = ArmorSlotCount * layout->stack_size;
+        if (ReadBytes(host, player + layout->player_armor, vector.data(), sizeof(vector)) &&
+            vector[0] && vector[1] >= vector[0] && vector[2] >= vector[1] &&
+            vector[1] - vector[0] == bytes) {
+            std::vector<u8> a(bytes), b(bytes);
+            if (ReadBytes(host, vector[0], a.data(), bytes) &&
+                ReadBytes(host, vector[0], b.data(), bytes) && a == b &&
+                ReadBytes(host, player + layout->player_armor, after.data(), sizeof(after)) &&
+                vector == after) {
+                bool ok = true, defense_ok = layout->vt_armor_item && layout->armor_defense;
                 int total = 0;
-                bool ok = true;
-                for (int i = 0; i < 4 && ok; ++i) {
-                    const u8* s = raw.data() + i * layout->stack_size;
-                    u64 item{};
-                    std::memcpy(&item, s + layout->stack_item, 8);
-                    if (!s[layout->stack_count] || !item)
-                        continue;
-                    if (!layout->item_is_direct && !Read(host, item, item))
+                for (std::size_t i = 0; i < ArmorSlotCount && ok; ++i) {
+                    Slot& slot = stats.equipment[i];
+                    ok = DecodeSlot(host, a.data() + i * layout->stack_size, slot);
+                    if (!ok || !slot.count)
                         continue;
                     u64 vptr{};
                     s32 defense{};
-                    if (!Read(host, item, vptr)) {
-                        ok = false;
-                    } else if (vptr == main_base + layout->vt_armor_item) {
-                        ok = Read(host, item + layout->armor_defense, defense) && defense >= 0 &&
-                             defense <= 20;
-                        total += defense;
+                    if (defense_ok && !Read(host, slot.item, vptr)) {
+                        defense_ok = false;
+                    } else if (defense_ok && vptr == main_base + layout->vt_armor_item) {
+                        defense_ok = Read(host, slot.item + layout->armor_defense, defense) &&
+                                     defense >= 0 && defense <= 20;
+                        if (defense_ok)
+                            total += defense;
                     }
                 }
-                if (ok) {
+                stats.equipment_ok = ok;
+                if (ok && defense_ok)
                     stats.armor = {true, std::min(total, 20), 20};
-                }
             }
         }
     }
@@ -575,6 +588,12 @@ void Reader::PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stat
     publish("hunger", stats.hunger);
     publish("armor", stats.armor);
     publish("air", stats.air);
+    host.publish_i64(host.userdata, "equip.ready", stats.equipment_ok ? 1 : 0);
+    for (std::size_t i = 0; i < ArmorSlotCount; ++i) {
+        char prefix[32];
+        std::snprintf(prefix, sizeof(prefix), "equip.slot%zu", i);
+        PublishSlot(host, prefix, stats.equipment[i], stats.equipment_ok);
+    }
 
     // Icon states the way the HUD draws them: icon i covers points 2i+1 (half) and 2i+2 (full).
     const auto half_icons = [](int points, int i) {
@@ -603,29 +622,59 @@ void Reader::PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stat
     }
 }
 
+void Reader::PublishSlot(const EdenDsmodHostApi& host, const char* prefix,
+                         const Slot& slot, bool ready) {
+    const bool occupied = ready && slot.count;
+    const bool durability_ok = occupied && slot.durability >= 0;
+    const auto integer = [&](const char* field, s64 value) {
+        const std::string key = std::string(prefix) + "." + field;
+        host.publish_i64(host.userdata, key.c_str(), value);
+    };
+    const auto text = [&](const char* field, const std::string& value) {
+        const std::string key = std::string(prefix) + "." + field;
+        host.publish_text(host.userdata, key.c_str(), occupied ? value.c_str() : "");
+    };
+    integer("count", occupied ? slot.count : 0);
+    text("icon", slot.icon);
+    text("id", slot.id);
+    text("name", slot.name);
+    integer("dur_ok", durability_ok ? 1 : 0);
+    integer("dur", durability_ok ? slot.durability : -1);
+    integer("remaining", durability_ok ? slot.remaining : 0);
+    integer("max_damage", durability_ok ? slot.max_damage : 0);
+}
+
 void Reader::Publish(const EdenDsmodHostApi& host, const std::array<Slot, SlotCount>& slots,
                      int selected, bool ready, const char* why) {
     host.publish_i64(host.userdata, "inv.ready", ready ? 1 : 0);
     host.publish_i64(host.userdata, "inv.selected", selected);
     host.publish_text(host.userdata, "inv.diag", why ? why : "");
-    char key[32];
+    const bool selected_ok = ready && selected >= 0 && selected < 9;
+    host.publish_i64(host.userdata, "inv.selected_ok", selected_ok ? 1 : 0);
     for (std::size_t i = 0; i < SlotCount; ++i) {
-        const Slot& s = slots[i];
-        std::snprintf(key, sizeof(key), "inv.slot%zu.count", i);
-        host.publish_i64(host.userdata, key, ready ? s.count : 0);
-        std::snprintf(key, sizeof(key), "inv.slot%zu.icon", i);
-        host.publish_text(host.userdata, key, ready && s.count ? s.icon.c_str() : "");
-        std::snprintf(key, sizeof(key), "inv.slot%zu.id", i);
-        host.publish_text(host.userdata, key, ready && s.count ? s.id.c_str() : "");
-        std::snprintf(key, sizeof(key), "inv.slot%zu.name", i);
-        host.publish_text(host.userdata, key, ready && s.count ? s.name.c_str() : "");
+        char prefix[32];
+        std::snprintf(prefix, sizeof(prefix), "inv.slot%zu", i);
+        PublishSlot(host, prefix, slots[i], ready);
     }
-    if (ready && selected >= 0 && static_cast<std::size_t>(selected) < SlotCount &&
-        slots[static_cast<std::size_t>(selected)].count)
-        host.publish_text(host.userdata, "inv.slot_sel_name",
-                          slots[static_cast<std::size_t>(selected)].name.c_str());
-    else
-        host.publish_text(host.userdata, "inv.slot_sel_name", "");
+    const Slot* active = selected_ok ? &slots[static_cast<std::size_t>(selected)] : nullptr;
+    host.publish_text(host.userdata, "inv.slot_sel_name",
+                      active && active->count ? active->name.c_str() : "");
+    std::string durability;
+    bool pickaxe_low = false;
+    if (active && active->count && active->durability >= 0) {
+        durability = std::to_string(active->remaining) + " / " +
+                     std::to_string(active->max_damage) + " (" +
+                     std::to_string(active->durability) + "%)";
+        std::string id = active->id;
+        if (id.starts_with("minecraft:"))
+            id.erase(0, 10);
+        else if (id.starts_with("item."))
+            id.erase(0, 5);
+        pickaxe_low = id.ends_with("_pickaxe") &&
+                      active->remaining * 10 <= active->max_damage;
+    }
+    host.publish_text(host.userdata, "inv.tool_durability", durability.c_str());
+    host.publish_i64(host.userdata, "inv.pickaxe_low", pickaxe_low ? 1 : 0);
     host.publish_address(host.userdata, "inv.object", inventory);
     host.publish_address(host.userdata, "inv.items", items_begin);
     host.publish_address(host.userdata, "inv.pinv", player_inventory);
@@ -655,10 +704,15 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
     } else {
         ready = true;
         diag.clear();
-        NameSlots(host, slots, assets);
+        for (Slot& slot : slots)
+            NameSlot(host, slot, assets);
     }
     Publish(host, slots, selected, ready, diag.c_str());
-    PublishPlayer(host, ready ? ReadPlayer(host) : PlayerStats{});
+    PlayerStats stats = ready ? ReadPlayer(host) : PlayerStats{};
+    if (stats.equipment_ok)
+        for (Slot& slot : stats.equipment)
+            NameSlot(host, slot, assets);
+    PublishPlayer(host, stats);
     const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
                         std::chrono::steady_clock::now() - t0)
                         .count();
@@ -670,6 +724,8 @@ bool Reader::OnAction(const char* action, s64) {
     if (action && std::strcmp(action, "rescan") == 0) {
         inventory = 0;
         player_inventory = 0;
+        player = 0;
+        name_cache.clear();
         health_instance = 0;
         hunger_instance = 0;
         scan_cursor = 0;

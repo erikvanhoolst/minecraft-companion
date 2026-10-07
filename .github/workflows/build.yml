@@ -47,6 +47,8 @@ jobs:
           echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
       - name: Build Linux and Android modules and package
         run: scripts/build.sh all
+      - name: Test inventory and equipment reader
+        run: ctest --test-dir build/linux --output-on-failure
       - name: Verify installable release and deterministic packaging
         run: |
           python3 scripts/verify_release.py dist/0100D71004694000.dsmod.zip --tag "$RELEASE_TAG"

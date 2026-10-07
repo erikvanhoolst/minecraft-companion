@@ -14,6 +14,7 @@ This is what the AYN Thor runs. Everything below was verified live on the deskto
 | ItemInstance | 0x80 bytes, not polymorphic: Item* +0x00, Block* +0x08, aux u16 +0x18, count u8 +0x1A |
 | Selected hotbar slot | int at LocalPlayer +0x1A18 |
 | Item | registry name std::string at +0x48 (e.g. `diamond_axe`, `tile.cobblestone`), description id at +0x30; no icon-name field (+0xD8 belongs to MapItem) |
+| Durability | `Item::mMaxDamage` u16 at +0x62, stack damage u16 in aux +0x18. Static getters: main+0x12954B4 (`ldrh w0, [x0, #0x62]`) and main+0x129E898 (`ldrh w0, [x0, #0x18]`). Live registry check: diamond pickaxe maximum 1561. |
 | Resource packs | `romfs:/resource_packs/vanilla.zip`, `vanilla_base.zip` (deflate, backslash paths; `native/mc_zip.cpp`) |
 | Item description id | std::string at +0x30 (`item.diamond_chestplate`, `item.planks`) |
 | Block of a block item | ItemInstance +0x08 points at the BlockLegacy: description id std::string at +0x10 (`tile.planks`), name at +0x28 |
@@ -26,6 +27,14 @@ Icons come from the registry name (`Library::LegacyNames` in `native/mc_assets.c
 Coverage on the desktop (`dbg.sh items`): 405 of 423 items. The rest are 17 technical numeric tiles that never appear in an inventory, plus banners, whose look the game composes from patterns.
 
 The player values were checked against the game's own HUD. By writing them on the desktop: health 5.0 showed two and a half hearts, hunger 5.0 two and a half shanks, a diamond chestplate put in armor slot 1 appeared in the inventory screen and as four armor icons. In play (survival, under water): screenshots of both screens taken together showed the same 4, 3 and 2 bubbles, then no bubbles and six hearts while the player drowned (air goes below zero; the companion shows no bubbles then, like the HUD). The game draws air bubbles only under water and the armor row only with armor on; the companion shows both rows all the time (ten full bubbles above water, empty armor icons), with the HUD's bubble formula: `ceil((air - 2) * 10 / max)` full bubbles, popping ones up to `ceil(air * 10 / max)`. Above water the game resets air to the maximum at once.
+
+### Equipment and wear
+
+The armor vector is read twice, including its header, before publishing separate helmet, chestplate, leggings and boots slots. An empty slot is distinct from unavailable equipment data. The same stack decoder supplies icons, names and wear for inventory and equipped items; the HUD still adds their defense points.
+
+Remaining durability is `mMaxDamage - aux` for damageable items in 1.2.12, with percentages rounded up (one remaining use never reads as 0%). Damage must be between zero and the maximum; failed reads or invalid damage publish `dur_ok = 0`, `dur = -1`. Damageable items use texture/name variant zero rather than their damage value. Non-damageable stacks retain their normal aux variants. The selected pickaxe warning uses the exact remaining/max ratio, at or below 10%, rather than a rounded percentage. It clears on selection changes, repair, empty slots, unreadable selection, or failed inventory snapshots. The 1.26.13 damage/NBT and equipment layout remains unlocated and is disabled.
+
+The inventory layout has small wear bars (green above 25%, amber above 10%, red at or below 10%), selected-tool remaining uses and percent, and a quiet amber warning line with no popup or sound. Equipment has four labeled slots with icons, wear bars and percentages.
 
 ### Item names
 
@@ -71,4 +80,4 @@ Minecraft maps its memory itself (`svcMapPhysicalMemory`) into 0x10'00000000..0x
 
 ## Published values
 
-The map publishes `map.ready`, `map.image`, `map.image_prev`, `map.view`, `map.px`, `map.pz`, `map.heading`, `map.x`, `map.y`, `map.z`, `map.facing`, `map.diag` and `map.render_us` (see `native/mc_map.h`). The inventory publishes `inv.ready`, `inv.selected`, `inv.slot<i>.count`, `inv.slot<i>.icon` (`module:mc:item/<name>/<aux>`), `inv.slot<i>.id` (the item's registry name), `inv.slot<i>.name` (the name the game shows), `inv.slot_sel_name`, `inv.diag`, `player.<stat>`, `player.<stat>_max` and `player.<stat>_ok` for health, hunger, armor and air, `hud.heart<i>`, `hud.armor<i>`, `hud.hunger<i>`, `hud.bubble<i>` (per icon: 0 empty, 1 half or popping, 2 full), `mc.sample_us`. The full list is at the top of `native/mc_reader.h`; the page layout is `package/dualscreen/manifest.json`.
+The map publishes `map.ready`, `map.image`, `map.image_prev`, `map.view`, `map.px`, `map.pz`, `map.heading`, `map.x`, `map.y`, `map.z`, `map.facing`, `map.diag` and `map.render_us` (see `native/mc_map.h`). The inventory publishes `inv.ready`, `inv.selected`, `inv.slot<i>.count`, `inv.slot<i>.icon` (`module:mc:item/<name>/<aux>`), `inv.slot<i>.id` (the item's registry name), `inv.slot<i>.name` (the name the game shows), `inv.slot_sel_name`, `inv.diag`, `player.<stat>`, `player.<stat>_max` and `player.<stat>_ok` for health, hunger, armor and air, `hud.heart<i>`, `hud.armor<i>`, `hud.hunger<i>`, `hud.bubble<i>` (per icon: 0 empty, 1 half or popping, 2 full), `mc.sample_us`. Equipment additionally publishes `equip.ready` and `equip.slot<i>.*` (0 helmet, 1 chestplate, 2 leggings, 3 boots), with the same fields as inventory slots. Both kinds of slot publish `dur_ok`, `dur` (remaining percent, -1 unavailable), `remaining`, and `max_damage`. `inv.selected_ok` gates the hotbar highlight and selected-tool state, `inv.tool_durability` gives the remaining/max/percentage label, and `inv.pickaxe_low` gates the warning. The full list is at the top of `native/mc_reader.h`; the page layout is `package/dualscreen/manifest.json`.
