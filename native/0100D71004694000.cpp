@@ -17,6 +17,7 @@
 #include "mc_debug.h"
 #include "mc_map.h"
 #include "mc_reader.h"
+#include "mc_waypoints.h"
 
 #include <atomic>
 #include <cstdint>
@@ -34,7 +35,8 @@ EdenDsmodBool SupportsBuild(const char* build_id) {
 }
 
 struct Module {
-    Module(const EdenDsmodHostApi& api, const char* config) : host{api}, reader{api, config}, map{config} {}
+    Module(const EdenDsmodHostApi& api, const char* config)
+        : host{api}, reader{api, config}, map{config}, waypoints{config} {}
 
     EdenDsmodBool LoadImage(const EdenDsmodHostApi* image_host, const char* key, void* receiver,
                             EdenDsmodImageSink sink) {
@@ -46,6 +48,11 @@ struct Module {
         if (!k.starts_with("mc:"))
             return EDEN_DSMOD_FALSE;
         k.remove_prefix(3);
+        if (k == "waypoint/arrow") {
+            const auto image = mc_waypoints::ArrowImage();
+            sink(receiver, image.width, image.height, image.rgba.data(), image.rgba.size());
+            return EDEN_DSMOD_TRUE;
+        }
         if (k.starts_with("mapview/")) {
             const auto picture = map.Load(*image_host, k);
             if (!picture)
@@ -86,6 +93,7 @@ struct Module {
     mc_assets::Library assets;
     mc_reader::Reader reader;
     mc_map::Map map;
+    mc_waypoints::Waypoints waypoints;
     mc_debug::Console console;
 };
 
@@ -114,6 +122,7 @@ void SampleCallback(void* p, const EdenDsmodHostApi* host) {
             auto* m = static_cast<Module*>(p);
             m->reader.Sample(*host, &m->assets);
             m->map.Sample(*host, m->reader);
+            m->waypoints.Sample(*host);
             m->console.Tick(*host, m->reader, &m->assets);
         }
     } catch (...) {
@@ -128,7 +137,8 @@ EdenDsmodBool ActionCallback(void* p, const char* action, std::int64_t argument)
         if (!p)
             return EDEN_DSMOD_FALSE;
         auto* m = static_cast<Module*>(p);
-        return m->reader.OnAction(action, argument) || m->map.OnAction(action, argument)
+        return m->reader.OnAction(action, argument) || m->map.OnAction(action, argument) ||
+                       m->waypoints.OnAction(action, argument)
                    ? EDEN_DSMOD_TRUE
                    : EDEN_DSMOD_FALSE;
     } catch (...) {

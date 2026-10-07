@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft (Bedrock Edition, Switch) second-screen companion with two tabs. Inventory: the player's armor, health, air and hunger as the game's HUD draws them, above the 9x4 inventory grid (27 main slots above the 9 hotbar slots), separate helmet, chestplate, leggings and boots below the grid, durability bars for damageable items and a quiet warning at 10% or less durability on the selected pickaxe (Minecraft 1.2.12), item icons decoded by the native module from the player's own romfs resource packs, stack counts, the selected hotbar slot and its name as the game shows it, in the game's own font. Map: the chunks the game holds around the player, drawn by the module the way the game's map item draws them (each block's own map colour, shaded by height and water depth), on the game's map paper with its player marker, plus the player's coordinates and heading. The package ships no game assets.",
+ "_about": "Minecraft (Bedrock Edition, Switch) second-screen companion with two tabs. Inventory: the player's armor, health, air and hunger as the game's HUD draws them, above the 9x4 inventory grid (27 main slots above the 9 hotbar slots), separate helmet, chestplate, leggings and boots below the grid, durability bars for damageable items and a quiet warning at 10% or less durability on the selected pickaxe (Minecraft 1.2.12), item icons decoded by the native module from the player's own romfs resource packs, stack counts, the selected hotbar slot and its name as the game shows it, in the game's own font. Map: the chunks the game holds around the player, drawn by the module the way the game's map item draws them (each block's own map colour, shaded by height and water depth), on the game's map paper with its player marker, plus the player's coordinates and heading. The package ships no game assets. Waypoints: mark bases, villages, mines or places; choose a destination for a heading-relative arrow and horizontal distance, with separate lists per confirmed world and dimension.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -134,10 +134,9 @@
      "color": "#00000000"
     },
     {
-     "_note": "tab bar: the page's own tab is lit",
      "type": "button",
      "rect": [
-      384,
+      254,
       14,
       228,
       72
@@ -153,7 +152,7 @@
     {
      "type": "button",
      "rect": [
-      628,
+      498,
       14,
       228,
       72
@@ -163,6 +162,22 @@
      "align": "center",
      "border": 4,
      "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FF8A8A8A"
+    },
+    {
+     "type": "button",
+     "rect": [
+      742,
+      14,
+      228,
+      72
+     ],
+     "text": "Waypoints",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_waypoints",
      "bg": "#FF262626",
      "color": "#FF8A8A8A"
     },
@@ -1149,10 +1164,9 @@
      "color": "#00000000"
     },
     {
-     "_note": "tab bar: the page's own tab is lit",
      "type": "button",
      "rect": [
-      384,
+      254,
       14,
       228,
       72
@@ -1168,7 +1182,7 @@
     {
      "type": "button",
      "rect": [
-      628,
+      498,
       14,
       228,
       72
@@ -1180,6 +1194,22 @@
      "on_tap": "page_map",
      "bg": "#FF4A4A4A",
      "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      742,
+      14,
+      228,
+      72
+     ],
+     "text": "Waypoints",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_waypoints",
+     "bg": "#FF262626",
+     "color": "#FF8A8A8A"
     },
     {
      "_note": "swipe right for the inventory",
@@ -1194,18 +1224,6 @@
      "color": "#00000000",
      "frame": 0,
      "on_swipe_right": "page_inventory"
-    },
-    {
-     "_note": "Terrain discovered in the confirmed world/dimension remains after its chunks unload; unknown ground stays paper.",
-     "type": "image",
-     "rect": [
-      24,
-      104,
-      864,
-      864
-     ],
-     "color": "#FFFFFFFF",
-     "src": "module:mc:map/map_background"
     },
     {
      "_note": "the previous picture underneath, so the map never blinks while the next one loads",
@@ -1442,6 +1460,88 @@
      "need_bind": "map.ready"
     },
     {
+     "type": "rect",
+     "rect": [
+      66,
+      146,
+      12,
+      12
+     ],
+     "x_bind": "waypoint.map_x",
+     "y_bind": "waypoint.map_z",
+     "bg": "#FF79C86E",
+     "color": "#FF183A18",
+     "frame": 2,
+     "need_bind": "waypoint.marker"
+    },
+    {
+     "type": "label",
+     "rect": [
+      924,
+      524,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.active",
+     "bind_text": "waypoint.target"
+    },
+    {
+     "type": "label",
+     "rect": [
+      924,
+      564,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.active",
+     "bind_text": "waypoint.navigation"
+    },
+    {
+     "type": "image",
+     "rect": [
+      1017,
+      600,
+      100,
+      100
+     ],
+     "src": "module:mc:waypoint/arrow",
+     "rotate_bind": "waypoint.relative",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.arrow"
+    },
+    {
+     "type": "button",
+     "rect": [
+      924,
+      924,
+      286,
+      56
+     ],
+     "text": "Waypoints",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_waypoints",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "_note": "Terrain discovered in the confirmed world/dimension remains after its chunks unload; unknown ground stays paper.",
+     "type": "image",
+     "rect": [
+      24,
+      104,
+      864,
+      864
+     ],
+     "color": "#FFFFFFFF",
+     "src": "module:mc:map/map_background"
+    },
+    {
      "type": "label",
      "rect": [
       24,
@@ -1542,6 +1642,692 @@
      "color": "#FFFFFFFF"
     }
    ]
+  },
+  {
+   "id": "waypoints",
+   "title": "Waypoints",
+   "widgets": [
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      1240,
+      1080
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#00000000"
+    },
+    {
+     "type": "button",
+     "rect": [
+      254,
+      14,
+      228,
+      72
+     ],
+     "text": "Inventory",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_inventory",
+     "bg": "#FF262626",
+     "color": "#FF8A8A8A"
+    },
+    {
+     "type": "button",
+     "rect": [
+      498,
+      14,
+      228,
+      72
+     ],
+     "text": "Map",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FF8A8A8A"
+    },
+    {
+     "type": "button",
+     "rect": [
+      742,
+      14,
+      228,
+      72
+     ],
+     "text": "Waypoints",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_waypoints",
+     "bg": "#FF4A4A4A",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      40,
+      110,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FF9AA4B0",
+     "bind_text": "waypoint.scope"
+    },
+    {
+     "type": "label",
+     "rect": [
+      40,
+      148,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "text": "Mark your current position"
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      180,
+      170,
+      64
+     ],
+     "text": "Base",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_add_base",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.ready"
+    },
+    {
+     "type": "button",
+     "rect": [
+      224,
+      180,
+      170,
+      64
+     ],
+     "text": "Village",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_add_village",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.ready"
+    },
+    {
+     "type": "button",
+     "rect": [
+      408,
+      180,
+      170,
+      64
+     ],
+     "text": "Mine",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_add_mine",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.ready"
+    },
+    {
+     "type": "button",
+     "rect": [
+      592,
+      180,
+      170,
+      64
+     ],
+     "text": "Place",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_add_place",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      40,
+      300,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.empty",
+     "text": "No waypoints yet. Mark a place above."
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      270,
+      722,
+      96
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_select_0",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row0.present"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      40,
+      270,
+      8,
+      96
+     ],
+     "bg": "#FF79C86E",
+     "color": "#00000000",
+     "need_bind": "waypoint.row0.selected"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      286,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row0.present",
+     "bind_text": "waypoint.row0.name"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      328,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.row0.present",
+     "bind_text": "waypoint.row0.detail"
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      378,
+      722,
+      96
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_select_1",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row1.present"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      40,
+      378,
+      8,
+      96
+     ],
+     "bg": "#FF79C86E",
+     "color": "#00000000",
+     "need_bind": "waypoint.row1.selected"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      394,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row1.present",
+     "bind_text": "waypoint.row1.name"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      436,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.row1.present",
+     "bind_text": "waypoint.row1.detail"
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      486,
+      722,
+      96
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_select_2",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row2.present"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      40,
+      486,
+      8,
+      96
+     ],
+     "bg": "#FF79C86E",
+     "color": "#00000000",
+     "need_bind": "waypoint.row2.selected"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      502,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row2.present",
+     "bind_text": "waypoint.row2.name"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      544,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.row2.present",
+     "bind_text": "waypoint.row2.detail"
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      594,
+      722,
+      96
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_select_3",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row3.present"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      40,
+      594,
+      8,
+      96
+     ],
+     "bg": "#FF79C86E",
+     "color": "#00000000",
+     "need_bind": "waypoint.row3.selected"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      610,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row3.present",
+     "bind_text": "waypoint.row3.name"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      652,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.row3.present",
+     "bind_text": "waypoint.row3.detail"
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      702,
+      722,
+      96
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_select_4",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row4.present"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      40,
+      702,
+      8,
+      96
+     ],
+     "bg": "#FF79C86E",
+     "color": "#00000000",
+     "need_bind": "waypoint.row4.selected"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      718,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row4.present",
+     "bind_text": "waypoint.row4.name"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      760,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.row4.present",
+     "bind_text": "waypoint.row4.detail"
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      810,
+      722,
+      96
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_select_5",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row5.present"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      40,
+      810,
+      8,
+      96
+     ],
+     "bg": "#FF79C86E",
+     "color": "#00000000",
+     "need_bind": "waypoint.row5.selected"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      826,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.row5.present",
+     "bind_text": "waypoint.row5.name"
+    },
+    {
+     "type": "label",
+     "rect": [
+      64,
+      868,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.row5.present",
+     "bind_text": "waypoint.row5.detail"
+    },
+    {
+     "type": "button",
+     "rect": [
+      40,
+      934,
+      160,
+      58
+     ],
+     "text": "Previous",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_prev",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      602,
+      934,
+      160,
+      58
+     ],
+     "text": "Next",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_next",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      400,
+      950,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "bind_text": "waypoint.page",
+     "align": "center"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1000,
+      274,
+      0,
+      0
+     ],
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "bind_text": "waypoint.target",
+     "align": "center"
+    },
+    {
+     "type": "image",
+     "rect": [
+      904,
+      340,
+      192,
+      192
+     ],
+     "src": "module:mc:waypoint/arrow",
+     "rotate_bind": "waypoint.relative",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.arrow"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1000,
+      570,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.active",
+     "bind_text": "waypoint.navigation",
+     "align": "center"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1000,
+      630,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.active",
+     "bind_text": "waypoint.coords",
+     "align": "center"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1000,
+      692,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "need_bind": "waypoint.active",
+     "text": "Height difference",
+     "align": "center"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1000,
+      726,
+      0,
+      0
+     ],
+     "bind": "waypoint.dy",
+     "suffix": " blocks",
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.active"
+    },
+    {
+     "type": "button",
+     "rect": [
+      826,
+      814,
+      164,
+      70
+     ],
+     "text": "Stop",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_stop",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.active"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1006,
+      814,
+      184,
+      70
+     ],
+     "text": "Delete",
+     "text_scale": 3,
+     "align": "center",
+     "border": 4,
+     "on_tap": "waypoint_delete",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "waypoint.active"
+    },
+    {
+     "type": "label",
+     "rect": [
+      40,
+      1012,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFC5A45B",
+     "bind_text": "waypoint.status"
+    },
+    {
+     "type": "label",
+     "rect": [
+      40,
+      1044,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF707880",
+     "bind_text": "waypoint.storage"
+    }
+   ]
   }
  ],
  "actions": {
@@ -1571,6 +2357,92 @@
   "map_zoom_out": {
    "kind": "module",
    "action": "map_zoom_out",
+   "haptic": "click"
+  },
+  "page_waypoints": {
+   "kind": "page",
+   "page": "waypoints",
+   "transition": "fade",
+   "duration_ms": 200
+  },
+  "waypoint_delete": {
+   "kind": "module",
+   "action": "waypoint_delete",
+   "haptic": "click"
+  },
+  "waypoint_stop": {
+   "kind": "module",
+   "action": "waypoint_stop",
+   "haptic": "click"
+  },
+  "waypoint_prev": {
+   "kind": "module",
+   "action": "waypoint_prev",
+   "haptic": "click"
+  },
+  "waypoint_next": {
+   "kind": "module",
+   "action": "waypoint_next",
+   "haptic": "click"
+  },
+  "waypoint_add_base": {
+   "kind": "module",
+   "action": "waypoint_add",
+   "argument": 0,
+   "haptic": "click"
+  },
+  "waypoint_add_village": {
+   "kind": "module",
+   "action": "waypoint_add",
+   "argument": 1,
+   "haptic": "click"
+  },
+  "waypoint_add_mine": {
+   "kind": "module",
+   "action": "waypoint_add",
+   "argument": 2,
+   "haptic": "click"
+  },
+  "waypoint_add_place": {
+   "kind": "module",
+   "action": "waypoint_add",
+   "argument": 3,
+   "haptic": "click"
+  },
+  "waypoint_select_0": {
+   "kind": "module",
+   "action": "waypoint_select",
+   "argument": 0,
+   "haptic": "click"
+  },
+  "waypoint_select_1": {
+   "kind": "module",
+   "action": "waypoint_select",
+   "argument": 1,
+   "haptic": "click"
+  },
+  "waypoint_select_2": {
+   "kind": "module",
+   "action": "waypoint_select",
+   "argument": 2,
+   "haptic": "click"
+  },
+  "waypoint_select_3": {
+   "kind": "module",
+   "action": "waypoint_select",
+   "argument": 3,
+   "haptic": "click"
+  },
+  "waypoint_select_4": {
+   "kind": "module",
+   "action": "waypoint_select",
+   "argument": 4,
+   "haptic": "click"
+  },
+  "waypoint_select_5": {
+   "kind": "module",
+   "action": "waypoint_select",
+   "argument": 5,
    "haptic": "click"
   },
   "world_next": {
