@@ -32,12 +32,13 @@ The **Inventory** tab provides a live overview of all 36 inventory slots:
 - **Items and counts:** each occupied slot shows its item icon. Stacks of two or more items show their count in the bottom-right corner; empty slots remain blank.
 - **Active selection:** a border highlights the selected hotbar slot. When you select another slot in Minecraft, the highlight follows on the second screen.
 - **Item name:** the selected item's name appears below the grid. Supported variants account for details such as wood type, color, or potion type.
+- **Touch item details:** tap any inventory, hotbar or armor slot to see its name, count, custom name, remaining durability and enchantments with levels. The drawer updates live; tap another inventory slot to inspect it, or **Close** to return to the armor overview. Longer enchantment lists have **<** and **>** controls. Inspecting an item does not change the selected hotbar slot in Minecraft. See [item details](docs/features/item-details.md).
 - **Equipment:** separate helmet, chestplate, leggings, and boots slots below the grid, with an explicit empty state and each equipped item's remaining durability.
 - **Wear:** small green, amber, or red durability bars on damageable items in the inventory and hotbar. The selected tool also shows remaining uses, maximum durability, and a percentage.
 - **Pickaxe warning:** a quiet amber line, **Pickaxe nearly broken**, appears while your selected pickaxe has 10% or less durability remaining. Switching tools, repairing it, or removing it clears the warning; there is no popup or sound.
 - **Minecraft styling:** text uses the game's font, with a shadow behind names and counts. Block icons are displayed as flat textures.
 
-Equipment and durability are available for Minecraft **1.2.12**. Unreadable data stays hidden; the warning only uses a reliably read hotbar selection.
+Equipment, durability and item metadata are available for Minecraft **1.2.12**. Unreadable details show **Unavailable**; the warning only uses a reliably read hotbar selection.
 
 Tab labels and item names are currently in English. Names come from your game's `texts/en_US.lang`, so the app does not automatically follow Minecraft's language setting. If a translation is missing, the module derives a readable name from the internal item identifier.
 

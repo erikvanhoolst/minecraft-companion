@@ -23,4 +23,7 @@ std::string DisplayName(std::string_view description_id, int aux, const Lookup& 
 /// Readable stand-in when no translation exists: "tile.stone_slab" -> "Stone Slab".
 std::string Fallback(std::string_view identifier);
 
+/// Minecraft 1.2.12 enchantment IDs, with the game's translated name and level.
+std::string EnchantmentName(int id, int level, const Lookup& lang = {});
+
 } // namespace mc_names

@@ -30,6 +30,55 @@
   {
    "name": "ui.map_my",
    "expr": "map.pz * 768 / max(map.view, 1)"
+  },
+  {
+   "name": "ui.detail_closed_inv_pickaxe_low",
+   "all_nonzero": [
+    "detail.closed",
+    "inv.pickaxe_low"
+   ]
+  },
+  {
+   "name": "ui.detail_closed_equip_ready",
+   "all_nonzero": [
+    "detail.closed",
+    "equip.ready"
+   ]
+  },
+  {
+   "name": "ui.detail_closed_equip_slot0_dur_ok",
+   "all_nonzero": [
+    "detail.closed",
+    "equip.slot0.dur_ok"
+   ]
+  },
+  {
+   "name": "ui.detail_closed_equip_slot1_dur_ok",
+   "all_nonzero": [
+    "detail.closed",
+    "equip.slot1.dur_ok"
+   ]
+  },
+  {
+   "name": "ui.detail_closed_equip_slot2_dur_ok",
+   "all_nonzero": [
+    "detail.closed",
+    "equip.slot2.dur_ok"
+   ]
+  },
+  {
+   "name": "ui.detail_closed_equip_slot3_dur_ok",
+   "all_nonzero": [
+    "detail.closed",
+    "equip.slot3.dur_ok"
+   ]
+  },
+  {
+   "name": "ui.detail_pickaxe_low",
+   "all_nonzero": [
+    "detail.open",
+    "inv.pickaxe_low"
+   ]
   }
  ],
  "page_binds": [
@@ -587,7 +636,8 @@
      "bind_text": "inv.slot_sel_name",
      "text_scale": 4,
      "align": "center",
-     "color": "#FF3F3F3F"
+     "color": "#FF3F3F3F",
+     "need_bind": "detail.closed"
     },
     {
      "type": "label",
@@ -600,7 +650,8 @@
      "bind_text": "inv.slot_sel_name",
      "text_scale": 4,
      "align": "center",
-     "color": "#FFFFFFFF"
+     "color": "#FFFFFFFF",
+     "need_bind": "detail.closed"
     },
     {
      "type": "value",
@@ -614,7 +665,8 @@
      "suffix": " us",
      "text_scale": 2,
      "align": "right",
-     "color": "#FF505860"
+     "color": "#FF505860",
+     "need_bind": "detail.closed"
     },
     {
      "type": "bar",
@@ -757,7 +809,8 @@
      "bind_text": "inv.tool_durability",
      "text_scale": 3,
      "align": "center",
-     "color": "#FF9AA4B0"
+     "color": "#FF9AA4B0",
+     "need_bind": "detail.closed"
     },
     {
      "_note": "Quiet, persistent warning while the selected pickaxe has at most 10% remaining; no popup or sound.",
@@ -772,7 +825,7 @@
      "text_scale": 3,
      "align": "center",
      "color": "#FFC5A45B",
-     "need_bind": "inv.pickaxe_low"
+     "need_bind": "ui.detail_closed_inv_pickaxe_low"
     },
     {
      "type": "label",
@@ -785,7 +838,7 @@
      "text": "Helmet",
      "text_scale": 3,
      "color": "#FF9AA4B0",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "rect",
@@ -797,7 +850,7 @@
      ],
      "bg": "#FF262626",
      "color": "#FF4A4A4A",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "image",
@@ -809,7 +862,7 @@
      ],
      "src_bind": "equip.slot0.icon",
      "color": "#FFFFFFFF",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "label",
@@ -822,7 +875,7 @@
      "text": "Empty",
      "text_scale": 3,
      "color": "#FF707880",
-     "need_bind": "equip.ready",
+     "need_bind": "ui.detail_closed_equip_ready",
      "hide_bind": "equip.slot0.count",
      "keep_max": 0
     },
@@ -839,7 +892,7 @@
      "text_scale": 3,
      "align": "right",
      "color": "#FFBBC3CB",
-     "need_bind": "equip.slot0.dur_ok"
+     "need_bind": "ui.detail_closed_equip_slot0_dur_ok"
     },
     {
      "type": "bar",
@@ -854,7 +907,7 @@
      "bg": "#FF151515",
      "color": "#FFB86A55",
      "frame": 0,
-     "need_bind": "equip.slot0.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot0_dur_ok",
      "hide_bind": "equip.slot0.dur",
      "keep_min": 0,
      "keep_max": 10
@@ -872,7 +925,7 @@
      "bg": "#FF151515",
      "color": "#FFC5A45B",
      "frame": 0,
-     "need_bind": "equip.slot0.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot0_dur_ok",
      "hide_bind": "equip.slot0.dur",
      "keep_min": 11,
      "keep_max": 25
@@ -890,7 +943,7 @@
      "bg": "#FF151515",
      "color": "#FF79A65A",
      "frame": 0,
-     "need_bind": "equip.slot0.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot0_dur_ok",
      "hide_bind": "equip.slot0.dur",
      "keep_min": 26,
      "keep_max": 100
@@ -906,7 +959,7 @@
      "text": "Chestplate",
      "text_scale": 3,
      "color": "#FF9AA4B0",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "rect",
@@ -918,7 +971,7 @@
      ],
      "bg": "#FF262626",
      "color": "#FF4A4A4A",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "image",
@@ -930,7 +983,7 @@
      ],
      "src_bind": "equip.slot1.icon",
      "color": "#FFFFFFFF",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "label",
@@ -943,7 +996,7 @@
      "text": "Empty",
      "text_scale": 3,
      "color": "#FF707880",
-     "need_bind": "equip.ready",
+     "need_bind": "ui.detail_closed_equip_ready",
      "hide_bind": "equip.slot1.count",
      "keep_max": 0
     },
@@ -960,7 +1013,7 @@
      "text_scale": 3,
      "align": "right",
      "color": "#FFBBC3CB",
-     "need_bind": "equip.slot1.dur_ok"
+     "need_bind": "ui.detail_closed_equip_slot1_dur_ok"
     },
     {
      "type": "bar",
@@ -975,7 +1028,7 @@
      "bg": "#FF151515",
      "color": "#FFB86A55",
      "frame": 0,
-     "need_bind": "equip.slot1.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot1_dur_ok",
      "hide_bind": "equip.slot1.dur",
      "keep_min": 0,
      "keep_max": 10
@@ -993,7 +1046,7 @@
      "bg": "#FF151515",
      "color": "#FFC5A45B",
      "frame": 0,
-     "need_bind": "equip.slot1.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot1_dur_ok",
      "hide_bind": "equip.slot1.dur",
      "keep_min": 11,
      "keep_max": 25
@@ -1011,7 +1064,7 @@
      "bg": "#FF151515",
      "color": "#FF79A65A",
      "frame": 0,
-     "need_bind": "equip.slot1.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot1_dur_ok",
      "hide_bind": "equip.slot1.dur",
      "keep_min": 26,
      "keep_max": 100
@@ -1027,7 +1080,7 @@
      "text": "Leggings",
      "text_scale": 3,
      "color": "#FF9AA4B0",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "rect",
@@ -1039,7 +1092,7 @@
      ],
      "bg": "#FF262626",
      "color": "#FF4A4A4A",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "image",
@@ -1051,7 +1104,7 @@
      ],
      "src_bind": "equip.slot2.icon",
      "color": "#FFFFFFFF",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "label",
@@ -1064,7 +1117,7 @@
      "text": "Empty",
      "text_scale": 3,
      "color": "#FF707880",
-     "need_bind": "equip.ready",
+     "need_bind": "ui.detail_closed_equip_ready",
      "hide_bind": "equip.slot2.count",
      "keep_max": 0
     },
@@ -1081,7 +1134,7 @@
      "text_scale": 3,
      "align": "right",
      "color": "#FFBBC3CB",
-     "need_bind": "equip.slot2.dur_ok"
+     "need_bind": "ui.detail_closed_equip_slot2_dur_ok"
     },
     {
      "type": "bar",
@@ -1096,7 +1149,7 @@
      "bg": "#FF151515",
      "color": "#FFB86A55",
      "frame": 0,
-     "need_bind": "equip.slot2.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot2_dur_ok",
      "hide_bind": "equip.slot2.dur",
      "keep_min": 0,
      "keep_max": 10
@@ -1114,7 +1167,7 @@
      "bg": "#FF151515",
      "color": "#FFC5A45B",
      "frame": 0,
-     "need_bind": "equip.slot2.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot2_dur_ok",
      "hide_bind": "equip.slot2.dur",
      "keep_min": 11,
      "keep_max": 25
@@ -1132,7 +1185,7 @@
      "bg": "#FF151515",
      "color": "#FF79A65A",
      "frame": 0,
-     "need_bind": "equip.slot2.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot2_dur_ok",
      "hide_bind": "equip.slot2.dur",
      "keep_min": 26,
      "keep_max": 100
@@ -1148,7 +1201,7 @@
      "text": "Boots",
      "text_scale": 3,
      "color": "#FF9AA4B0",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "rect",
@@ -1160,7 +1213,7 @@
      ],
      "bg": "#FF262626",
      "color": "#FF4A4A4A",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "image",
@@ -1172,7 +1225,7 @@
      ],
      "src_bind": "equip.slot3.icon",
      "color": "#FFFFFFFF",
-     "need_bind": "equip.ready"
+     "need_bind": "ui.detail_closed_equip_ready"
     },
     {
      "type": "label",
@@ -1185,7 +1238,7 @@
      "text": "Empty",
      "text_scale": 3,
      "color": "#FF707880",
-     "need_bind": "equip.ready",
+     "need_bind": "ui.detail_closed_equip_ready",
      "hide_bind": "equip.slot3.count",
      "keep_max": 0
     },
@@ -1202,7 +1255,7 @@
      "text_scale": 3,
      "align": "right",
      "color": "#FFBBC3CB",
-     "need_bind": "equip.slot3.dur_ok"
+     "need_bind": "ui.detail_closed_equip_slot3_dur_ok"
     },
     {
      "type": "bar",
@@ -1217,7 +1270,7 @@
      "bg": "#FF151515",
      "color": "#FFB86A55",
      "frame": 0,
-     "need_bind": "equip.slot3.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot3_dur_ok",
      "hide_bind": "equip.slot3.dur",
      "keep_min": 0,
      "keep_max": 10
@@ -1235,7 +1288,7 @@
      "bg": "#FF151515",
      "color": "#FFC5A45B",
      "frame": 0,
-     "need_bind": "equip.slot3.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot3_dur_ok",
      "hide_bind": "equip.slot3.dur",
      "keep_min": 11,
      "keep_max": 25
@@ -1253,10 +1306,345 @@
      "bg": "#FF151515",
      "color": "#FF79A65A",
      "frame": 0,
-     "need_bind": "equip.slot3.dur_ok",
+     "need_bind": "ui.detail_closed_equip_slot3_dur_ok",
      "hide_bind": "equip.slot3.dur",
      "keep_min": 26,
      "keep_max": 100
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      262,
+      112,
+      112
+     ],
+     "text": "",
+     "bg": "#00000000",
+     "color": "#00000000",
+     "border": 0,
+     "on_tap": "item_inspect",
+     "payload": "{i+9}",
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      650,
+      112,
+      112
+     ],
+     "text": "",
+     "bg": "#00000000",
+     "color": "#00000000",
+     "border": 0,
+     "on_tap": "item_inspect",
+     "payload": "{i+0}",
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      942,
+      252,
+      92
+     ],
+     "text": "",
+     "bg": "#00000000",
+     "color": "#00000000",
+     "border": 0,
+     "on_tap": "item_inspect",
+     "payload": "{i+36}",
+     "repeat": 4,
+     "repeat_cols": 4,
+     "repeat_dx": 288,
+     "need_bind": "ui.detail_closed_equip_ready"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      112,
+      112
+     ],
+     "bg": "#00000000",
+     "color": "#FF8FC9E8",
+     "frame": 3,
+     "x_bind": "detail.x",
+     "y_bind": "detail.y",
+     "need_bind": "detail.inventory"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      68,
+      786,
+      1116,
+      278
+     ],
+     "bg": "#FF262C31",
+     "color": "#FF8FC9E8",
+     "frame": 2,
+     "need_bind": "detail.open"
+    },
+    {
+     "type": "image",
+     "rect": [
+      84,
+      802,
+      64,
+      64
+     ],
+     "need_bind": "detail.open",
+     "src_bind": "detail.icon",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      166,
+      806,
+      860,
+      32
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.name",
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "wrap_width": 860,
+     "max_lines": 1,
+     "fit_text": true,
+     "text_min_scale": 3
+    },
+    {
+     "type": "label",
+     "rect": [
+      166,
+      846,
+      200,
+      24
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.count",
+     "text_scale": 2,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1064,
+      798,
+      104,
+      58
+     ],
+     "need_bind": "detail.open",
+     "text": "Close",
+     "text_scale": 3,
+     "align": "center",
+     "on_tap": "item_close",
+     "border": 2,
+     "bg": "#FF343D43",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      84,
+      886,
+      1060,
+      24
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.custom_label",
+     "text_scale": 3,
+     "color": "#FFE4D0F5",
+     "wrap_width": 1060,
+     "max_lines": 1
+    },
+    {
+     "type": "label",
+     "rect": [
+      84,
+      920,
+      1000,
+      24
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.durability",
+     "text_scale": 3,
+     "color": "#FFB8DFA4"
+    },
+    {
+     "type": "label",
+     "rect": [
+      84,
+      954,
+      860,
+      24
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.enchant_label",
+     "text_scale": 3,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      84,
+      986,
+      510,
+      22
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.enchant0",
+     "text_scale": 3,
+     "color": "#FFD8ABF4",
+     "wrap_width": 510,
+     "max_lines": 1
+    },
+    {
+     "type": "label",
+     "rect": [
+      614,
+      986,
+      510,
+      22
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.enchant1",
+     "text_scale": 3,
+     "color": "#FFD8ABF4",
+     "wrap_width": 510,
+     "max_lines": 1
+    },
+    {
+     "type": "label",
+     "rect": [
+      84,
+      1010,
+      510,
+      22
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.enchant2",
+     "text_scale": 3,
+     "color": "#FFD8ABF4",
+     "wrap_width": 510,
+     "max_lines": 1
+    },
+    {
+     "type": "label",
+     "rect": [
+      614,
+      1010,
+      510,
+      22
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.enchant3",
+     "text_scale": 3,
+     "color": "#FFD8ABF4",
+     "wrap_width": 510,
+     "max_lines": 1
+    },
+    {
+     "type": "label",
+     "rect": [
+      84,
+      1034,
+      510,
+      22
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.enchant4",
+     "text_scale": 3,
+     "color": "#FFD8ABF4",
+     "wrap_width": 510,
+     "max_lines": 1
+    },
+    {
+     "type": "label",
+     "rect": [
+      614,
+      1034,
+      510,
+      22
+     ],
+     "need_bind": "detail.open",
+     "bind_text": "detail.enchant5",
+     "text_scale": 3,
+     "color": "#FFD8ABF4",
+     "wrap_width": 510,
+     "max_lines": 1
+    },
+    {
+     "type": "button",
+     "rect": [
+      1036,
+      944,
+      60,
+      36
+     ],
+     "need_bind": "detail.prev",
+     "text": "<",
+     "text_scale": 2,
+     "align": "center",
+     "on_tap": "item_enchant_previous",
+     "border": 2,
+     "bg": "#FF343D43",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1104,
+      944,
+      60,
+      36
+     ],
+     "need_bind": "detail.next",
+     "text": ">",
+     "text_scale": 2,
+     "align": "center",
+     "on_tap": "item_enchant_next",
+     "border": 2,
+     "bg": "#FF343D43",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      1052,
+      0,
+      0
+     ],
+     "text": "Tap a slot for item details",
+     "text_scale": 2,
+     "align": "center",
+     "color": "#FF9AA4B0",
+     "need_bind": "detail.closed"
+    },
+    {
+     "type": "label",
+     "rect": [
+      740,
+      846,
+      290,
+      24
+     ],
+     "text": "Pickaxe nearly broken",
+     "text_scale": 2,
+     "color": "#FFC5A45B",
+     "need_bind": "ui.detail_pickaxe_low"
     }
    ]
   },
@@ -4381,6 +4769,30 @@
   "effects_next": {
    "kind": "module",
    "action": "effects_next",
+   "haptic": "click"
+  },
+  "item_inspect": {
+   "kind": "module",
+   "action": "item_inspect",
+   "argument": "$payload",
+   "haptic": "click"
+  },
+  "item_close": {
+   "kind": "module",
+   "action": "item_close",
+   "argument": 0,
+   "haptic": "click"
+  },
+  "item_enchant_previous": {
+   "kind": "module",
+   "action": "item_enchant_page",
+   "argument": -1,
+   "haptic": "click"
+  },
+  "item_enchant_next": {
+   "kind": "module",
+   "action": "item_enchant_page",
+   "argument": 1,
    "haptic": "click"
   }
  },

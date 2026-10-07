@@ -267,4 +267,25 @@ std::string Fallback(std::string_view identifier) {
     return out;
 }
 
+std::string EnchantmentName(int id, int level, const Lookup& lang) {
+    // 1.2.12's registration at main+0x126F800..0x12708CC. Unlike modern Bedrock,
+    // Frost Walker and the curses follow fishing; Efficiency is 15, Unbreaking 17.
+    constexpr const char* keys[]{"protect.all", "protect.fire", "protect.fall", "protect.explosion",
+        "protect.projectile", "oxygen", "waterWorker", "thorns", "waterWalker", "damage.all",
+        "damage.undead", "damage.arthropods", "knockback", "fire", "lootBonus", "digging",
+        "untouching", "durability", "lootBonusDigger", "arrowDamage", "arrowKnockback",
+        "arrowFire", "arrowInfinite", "lootBonusFishing", "fishingSpeed", "frostwalker",
+        "mending", "curse.binding", "curse.vanishing"};
+    constexpr const char* roman[]{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+    if (id < 0 || level <= 0)
+        return {};
+    std::string name;
+    if (id < static_cast<int>(std::size(keys)))
+        if (const auto* translated = Get(lang, std::string("enchantment.") + keys[id]))
+            name = *translated;
+    if (name.empty())
+        name = "Enchantment " + std::to_string(id);
+    return name + " " + (level <= 10 ? std::string(roman[level]) : std::to_string(level));
+}
+
 } // namespace mc_names

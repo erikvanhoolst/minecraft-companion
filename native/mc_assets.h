@@ -80,6 +80,7 @@ public:
     /// variant the aux value selects (mc_names.h), or an empty string. Lock-free; empty until
     /// loaded.
     std::string ItemName(std::string_view description_id, int aux) const;
+    std::string EnchantmentName(int id, int level) const;
 
     /// Resolves a module image key (without the "module:mc:" prefix) and decodes it:
     ///   icon/<icon_name>/<frame>      an item by icon name and frame
