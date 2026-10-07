@@ -402,6 +402,13 @@ std::optional<std::string> Library::BlockIconPath(const EdenDsmodHostApi& host,
     return path;
 }
 
+std::string Library::LanguageText(std::string_view key) const {
+    if (!Loaded())
+        return {};
+    const auto it = index.lang.find(std::string{key});
+    return it == index.lang.end() ? std::string{} : it->second;
+}
+
 std::string Library::DisplayName(std::string_view full_name) const {
     if (!Loaded())
         return {};

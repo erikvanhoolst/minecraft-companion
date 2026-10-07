@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft second-screen companion: live inventory, equipment and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts. Assets come from the player’s own game.",
+ "_about": "Minecraft second-screen companion: live inventory, equipment, active potion effects and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts. Assets come from the player’s own game.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -67,9 +67,9 @@
     {
      "type": "button",
      "rect": [
-      132,
+      38,
       14,
-      228,
+      220,
       72
      ],
      "text": "Inventory",
@@ -83,9 +83,9 @@
     {
      "type": "button",
      "rect": [
-      376,
+      274,
       14,
-      228,
+      220,
       72
      ],
      "text": "Map",
@@ -99,9 +99,9 @@
     {
      "type": "button",
      "rect": [
-      620,
+      510,
       14,
-      228,
+      220,
       72
      ],
      "text": "Waypoints",
@@ -115,9 +115,9 @@
     {
      "type": "button",
      "rect": [
-      864,
+      746,
       14,
-      228,
+      220,
       72
      ],
      "text": "Projects",
@@ -127,6 +127,22 @@
      "color": "#FFFFFFFF",
      "border": 3,
      "on_tap": "page_projects"
+    },
+    {
+     "type": "button",
+     "rect": [
+      982,
+      14,
+      220,
+      72
+     ],
+     "text": "Effects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_effects"
     },
     {
      "type": "label",
@@ -200,9 +216,9 @@
     {
      "type": "button",
      "rect": [
-      132,
+      38,
       14,
-      228,
+      220,
       72
      ],
      "text": "Inventory",
@@ -216,9 +232,9 @@
     {
      "type": "button",
      "rect": [
-      376,
+      274,
       14,
-      228,
+      220,
       72
      ],
      "text": "Map",
@@ -232,9 +248,9 @@
     {
      "type": "button",
      "rect": [
-      620,
+      510,
       14,
-      228,
+      220,
       72
      ],
      "text": "Waypoints",
@@ -248,9 +264,9 @@
     {
      "type": "button",
      "rect": [
-      864,
+      746,
       14,
-      228,
+      220,
       72
      ],
      "text": "Projects",
@@ -260,6 +276,22 @@
      "color": "#FFFFFFFF",
      "border": 3,
      "on_tap": "page_projects"
+    },
+    {
+     "type": "button",
+     "rect": [
+      982,
+      14,
+      220,
+      72
+     ],
+     "text": "Effects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_effects"
     },
     {
      "_note": "swipe left for the map",
@@ -1246,9 +1278,9 @@
     {
      "type": "button",
      "rect": [
-      132,
+      38,
       14,
-      228,
+      220,
       72
      ],
      "text": "Inventory",
@@ -1262,9 +1294,9 @@
     {
      "type": "button",
      "rect": [
-      376,
+      274,
       14,
-      228,
+      220,
       72
      ],
      "text": "Map",
@@ -1278,9 +1310,9 @@
     {
      "type": "button",
      "rect": [
-      620,
+      510,
       14,
-      228,
+      220,
       72
      ],
      "text": "Waypoints",
@@ -1294,9 +1326,9 @@
     {
      "type": "button",
      "rect": [
-      864,
+      746,
       14,
-      228,
+      220,
       72
      ],
      "text": "Projects",
@@ -1306,6 +1338,22 @@
      "color": "#FFFFFFFF",
      "border": 3,
      "on_tap": "page_projects"
+    },
+    {
+     "type": "button",
+     "rect": [
+      982,
+      14,
+      220,
+      72
+     ],
+     "text": "Effects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_effects"
     },
     {
      "_note": "swipe right for the inventory",
@@ -1831,9 +1879,9 @@
     {
      "type": "button",
      "rect": [
-      132,
+      38,
       14,
-      228,
+      220,
       72
      ],
      "text": "Inventory",
@@ -1847,9 +1895,9 @@
     {
      "type": "button",
      "rect": [
-      376,
+      274,
       14,
-      228,
+      220,
       72
      ],
      "text": "Map",
@@ -1863,9 +1911,9 @@
     {
      "type": "button",
      "rect": [
-      620,
+      510,
       14,
-      228,
+      220,
       72
      ],
      "text": "Waypoints",
@@ -1879,9 +1927,9 @@
     {
      "type": "button",
      "rect": [
-      864,
+      746,
       14,
-      228,
+      220,
       72
      ],
      "text": "Projects",
@@ -1891,6 +1939,22 @@
      "color": "#FFFFFFFF",
      "border": 3,
      "on_tap": "page_projects"
+    },
+    {
+     "type": "button",
+     "rect": [
+      982,
+      14,
+      220,
+      72
+     ],
+     "text": "Effects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_effects"
     },
     {
      "type": "label",
@@ -2580,9 +2644,9 @@
     {
      "type": "button",
      "rect": [
-      132,
+      38,
       14,
-      228,
+      220,
       72
      ],
      "text": "Inventory",
@@ -2596,9 +2660,9 @@
     {
      "type": "button",
      "rect": [
-      376,
+      274,
       14,
-      228,
+      220,
       72
      ],
      "text": "Map",
@@ -2612,9 +2676,9 @@
     {
      "type": "button",
      "rect": [
-      620,
+      510,
       14,
-      228,
+      220,
       72
      ],
      "text": "Waypoints",
@@ -2628,9 +2692,9 @@
     {
      "type": "button",
      "rect": [
-      864,
+      746,
       14,
-      228,
+      220,
       72
      ],
      "text": "Projects",
@@ -2640,6 +2704,22 @@
      "color": "#FFFFFFFF",
      "border": 3,
      "on_tap": "page_projects"
+    },
+    {
+     "type": "button",
+     "rect": [
+      982,
+      14,
+      220,
+      72
+     ],
+     "text": "Effects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_effects"
     },
     {
      "type": "label",
@@ -3742,6 +3822,273 @@
     }
    ],
    "no_auto_leave": true
+  },
+  {
+   "id": "effects",
+   "title": "Effects",
+   "widgets": [
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      1240,
+      1080
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#00000000"
+    },
+    {
+     "type": "button",
+     "rect": [
+      38,
+      14,
+      220,
+      72
+     ],
+     "text": "Inventory",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_inventory"
+    },
+    {
+     "type": "button",
+     "rect": [
+      274,
+      14,
+      220,
+      72
+     ],
+     "text": "Map",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_map"
+    },
+    {
+     "type": "button",
+     "rect": [
+      510,
+      14,
+      220,
+      72
+     ],
+     "text": "Waypoints",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_waypoints"
+    },
+    {
+     "type": "button",
+     "rect": [
+      746,
+      14,
+      220,
+      72
+     ],
+     "text": "Projects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_projects"
+    },
+    {
+     "type": "button",
+     "rect": [
+      982,
+      14,
+      220,
+      72
+     ],
+     "text": "Effects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_effects"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      120,
+      0,
+      0
+     ],
+     "text": "Active effects",
+     "text_scale": 4,
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      174,
+      0,
+      0
+     ],
+     "bind_text": "effects.status",
+     "text_scale": 3,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      234,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "text": "Effect"
+    },
+    {
+     "type": "label",
+     "rect": [
+      810,
+      234,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "text": "Strength",
+     "align": "center"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1150,
+      234,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "text": "Time",
+     "align": "right"
+    },
+    {
+     "type": "rect",
+     "rect": [
+      54,
+      278,
+      1132,
+      76
+     ],
+     "bg": "#FF2C2C2C",
+     "color": "#FF4A4A4A",
+     "need_bind": "effects.row{i}.visible",
+     "repeat": 8,
+     "repeat_dy": 84
+    },
+    {
+     "type": "label",
+     "rect": [
+      74,
+      300,
+      0,
+      0
+     ],
+     "bind_text": "effects.row{i}.name",
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "effects.row{i}.visible",
+     "repeat": 8,
+     "repeat_dy": 84
+    },
+    {
+     "type": "label",
+     "rect": [
+      810,
+      300,
+      0,
+      0
+     ],
+     "bind_text": "effects.row{i}.strength",
+     "text_scale": 4,
+     "align": "center",
+     "color": "#FFC5A45B",
+     "need_bind": "effects.row{i}.visible",
+     "repeat": 8,
+     "repeat_dy": 84
+    },
+    {
+     "type": "label",
+     "rect": [
+      1150,
+      300,
+      0,
+      0
+     ],
+     "bind_text": "effects.row{i}.time",
+     "text_scale": 4,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "effects.row{i}.visible",
+     "repeat": 8,
+     "repeat_dy": 84
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      986,
+      240,
+      64
+     ],
+     "text": "Previous",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "effects_previous",
+     "need_bind": "effects.can_prev"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      1006,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "bind_text": "effects.page",
+     "align": "center"
+    },
+    {
+     "type": "button",
+     "rect": [
+      932,
+      986,
+      240,
+      64
+     ],
+     "text": "Next",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "effects_next",
+     "need_bind": "effects.can_next"
+    }
+   ]
   }
  ],
  "actions": {
@@ -4018,6 +4365,22 @@
   "death_trail": {
    "kind": "module",
    "action": "death_trail",
+   "haptic": "click"
+  },
+  "page_effects": {
+   "kind": "page",
+   "page": "effects",
+   "transition": "fade",
+   "duration_ms": 200
+  },
+  "effects_previous": {
+   "kind": "module",
+   "action": "effects_previous",
+   "haptic": "click"
+  },
+  "effects_next": {
+   "kind": "module",
+   "action": "effects_next",
    "haptic": "click"
   }
  },

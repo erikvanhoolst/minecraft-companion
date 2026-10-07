@@ -121,6 +121,11 @@ constexpr Layout Layouts[] = {
         .chunk_heightmap = 0x640,
         .block_registry = 0x33A4BE8,
         .block_map_color = 0x70, // stone 112,112,112; grass 127,178,56; water 64,64,255
+        // HUD calls main+0x11EF1A8 to get this vector, then advances by 16 bytes.
+        // Getters main+0x1159864/6C/7C read id/ticks/amplifier at +0/+4/+8.
+        .player_effects = 0x1148,
+        .effect_registry = 0x3391A40,
+        .effect_name = 0x20,
     },
 };
 
@@ -680,6 +685,125 @@ void Reader::Publish(const EdenDsmodHostApi& host, const std::array<Slot, SlotCo
     host.publish_address(host.userdata, "inv.pinv", player_inventory);
 }
 
+Reader::Effects Reader::ReadEffects(const EdenDsmodHostApi& host) const {
+    Effects result;
+    if (!layout || !layout->player_effects || !player)
+        return result;
+    std::array<u64, 3> header{}, after{};
+    if (!ReadBytes(host, player + layout->player_effects, header.data(), sizeof(header)))
+        return result;
+    const auto [begin, end, cap] = header;
+    constexpr u64 stride = 16;
+    if (end < begin || cap < end || (end - begin) % stride || (cap - begin) % stride ||
+        (end - begin) / stride > EffectSlots || (cap - begin) / stride > 2 * EffectSlots ||
+        (!begin && (end || cap)) || begin % 4)
+        return result;
+    // Entity::addEffect grows to id + 1 entries. Its vector helper can reserve twice the
+    // previous capacity (main+0x11EFF20); unused capacity is not part of the snapshot.
+    const auto bytes = static_cast<std::size_t>(end - begin);
+    std::array<u8, EffectSlots * stride> a{}, b{};
+    if ((bytes && (!ReadBytes(host, begin, a.data(), bytes) ||
+                   !ReadBytes(host, begin, b.data(), bytes) || a != b)) ||
+        !ReadBytes(host, player + layout->player_effects, after.data(), sizeof(after)) ||
+        header != after)
+        return result;
+    for (std::size_t i = 0; i < bytes / stride; ++i) {
+        s32 id{}, ticks{}, amplifier{};
+        const u8* raw = a.data() + i * stride;
+        std::memcpy(&id, raw, 4);
+        std::memcpy(&ticks, raw + 4, 4);
+        std::memcpy(&amplifier, raw + 8, 4);
+        // Empty entries use id zero; the HUD skips them. Expired entries can linger until
+        // the game removes them. Active ids must match their registry-indexed vector slot.
+        if (id == 0)
+            continue;
+        if (id != static_cast<int>(i) || ticks < 0 || amplifier < 0 || amplifier > 255 ||
+            raw[12] > 1 || raw[13] > 1 || raw[14] > 1)
+            return {};
+        if (ticks > 0)
+            result.active.push_back({id, ticks, amplifier});
+    }
+    result.ready = true;
+    return result;
+}
+
+void Reader::PublishEffects(const EdenDsmodHostApi& host, const Effects& effects,
+                            const mc_assets::Library* assets) {
+    effects_count = effects.ready ? effects.active.size() : 0;
+    effects_page = std::min(effects_page, effects_count ? (effects_count - 1) / EffectRows : 0);
+    const auto first = effects_page * EffectRows;
+    host.publish_i64(host.userdata, "effects.ready", effects.ready);
+    host.publish_i64(host.userdata, "effects.count", effects_count);
+    host.publish_i64(host.userdata, "effects.can_prev", effects.ready && effects_page > 0);
+    host.publish_i64(host.userdata, "effects.can_next", effects.ready && first + EffectRows < effects_count);
+    std::string status;
+    if (!layout || !layout->player_effects)
+        status = "Effects unavailable for this version";
+    else if (!effects.ready)
+        status = "Waiting for effect data";
+    else if (!effects_count)
+        status = "No active effects";
+    else
+        status = std::to_string(effects_count) + (effects_count == 1 ? " active effect" : " active effects");
+    host.publish_text(host.userdata, "effects.status", status.c_str());
+    const std::string page_text = effects_count ?
+        std::to_string(first + 1) + "-" + std::to_string(std::min(first + EffectRows, effects_count)) +
+            " of " + std::to_string(effects_count) : "";
+    host.publish_text(host.userdata, "effects.page", page_text.c_str());
+    // Fallbacks keep names readable while the resource-pack worker is loading.
+    static constexpr const char* names[EffectSlots] = {
+        "", "Speed", "Slowness", "Haste", "Mining Fatigue", "Strength", "Instant Health",
+        "Instant Damage", "Jump Boost", "Nausea", "Regeneration", "Resistance",
+        "Fire Resistance", "Water Breathing", "Invisibility", "Blindness", "Night Vision",
+        "Hunger", "Weakness", "Poison", "Wither", "Health Boost", "Absorption",
+        "Saturation", "Levitation", "Fatal Poison"};
+    static constexpr const char* roman[] = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
+    for (std::size_t row = 0; row < EffectRows; ++row) {
+        const bool visible = first + row < effects_count;
+        const Effect effect = visible ? effects.active[first + row] : Effect{};
+        std::string name, strength, time;
+        int seconds = 0;
+        if (visible) {
+            name = names[effect.id];
+            u64 definition{};
+            s32 definition_id{};
+            std::string key;
+            if (assets && assets->Loaded() && layout->effect_registry &&
+                Read(host, main_base + layout->effect_registry + effect.id * 8, definition) &&
+                definition && Read(host, definition + 8, definition_id) && definition_id == effect.id &&
+                ReadString(host, definition + layout->effect_name, key)) {
+                const std::string translated = assets->LanguageText(key);
+                if (!translated.empty())
+                    name = translated;
+            }
+            strength = effect.amplifier < 10 ? roman[effect.amplifier] : std::to_string(effect.amplifier + 1);
+            // Derive time from game ticks, so pauses and lag never advance a wall-clock timer.
+            seconds = effect.ticks / 20;
+            char buf[32];
+            std::snprintf(buf, sizeof(buf), "%d:%02d", seconds / 60, seconds % 60);
+            time = buf;
+        }
+        char prefix[32], key[64];
+        std::snprintf(prefix, sizeof(prefix), "effects.row%zu", row);
+        const auto number = [&](const char* field, s64 value) {
+            std::snprintf(key, sizeof(key), "%s.%s", prefix, field);
+            host.publish_i64(host.userdata, key, value);
+        };
+        const auto text = [&](const char* field, const std::string& value) {
+            std::snprintf(key, sizeof(key), "%s.%s", prefix, field);
+            host.publish_text(host.userdata, key, value.c_str());
+        };
+        number("visible", visible);
+        number("id", effect.id);
+        number("level", visible ? effect.amplifier + 1 : 0);
+        number("ticks", effect.ticks);
+        number("seconds", seconds);
+        text("name", name);
+        text("strength", strength);
+        text("time", time);
+    }
+}
+
 void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* assets) {
     const auto t0 = std::chrono::steady_clock::now();
     std::array<Slot, SlotCount> slots{};
@@ -720,6 +844,7 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
         for (Slot& slot : stats.equipment)
             NameSlot(host, slot, assets);
     PublishPlayer(host, stats);
+    PublishEffects(host, ready ? ReadEffects(host) : Effects{}, assets);
     const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
                         std::chrono::steady_clock::now() - t0)
                         .count();
@@ -728,8 +853,19 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
 }
 
 bool Reader::OnAction(const char* action, s64) {
+    if (action && std::strcmp(action, "effects_previous") == 0) {
+        if (effects_page > 0)
+            --effects_page;
+        return true;
+    }
+    if (action && std::strcmp(action, "effects_next") == 0) {
+        if ((effects_page + 1) * EffectRows < effects_count)
+            ++effects_page;
+        return true;
+    }
     if (action && std::strcmp(action, "rescan") == 0) {
         snapshot = {};
+        effects_page = effects_count = 0;
         inventory = 0;
         player_inventory = 0;
         player = 0;

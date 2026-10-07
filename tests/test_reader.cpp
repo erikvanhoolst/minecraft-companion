@@ -111,7 +111,123 @@ struct Fixture {
     }
 };
 
+void TestEffects() {
+    Fixture f;
+    Reader reader(f.host, nullptr);
+    const u64 effects = Fixture::Base + 0xA000;
+    const u64 header = f.player + f.layout->player_effects;
+    const auto vector = [&](std::size_t count) {
+        f.Put(header, effects);
+        f.Put(header + 8, effects + count * 16);
+        f.Put(header + 16, effects + count * 16);
+    };
+    const auto effect = [&](int id, s32 ticks, s32 amplifier) {
+        f.Put<s32>(effects + id * 16, id);
+        f.Put<s32>(effects + id * 16 + 4, ticks);
+        f.Put<s32>(effects + id * 16 + 8, amplifier);
+        f.Put<u8>(effects + id * 16 + 14, 1);
+    };
+    reader.Sample(f.host);
+    Check(f.ints["effects.ready"] == 1 && f.ints["effects.count"] == 0 &&
+          f.texts["effects.status"] == "No active effects", "empty effects are readable");
+    vector(EffectSlots);
+    effect(1, 3600, 1);
+    effect(16, 1200, 0);
+    f.Put(header + 16, effects + 2 * EffectSlots * 16);
+    reader.Sample(f.host);
+    Check(f.ints["effects.count"] == 2 && f.texts["effects.row0.name"] == "Speed" &&
+          f.texts["effects.row0.strength"] == "II" && f.texts["effects.row0.time"] == "3:00" &&
+          f.texts["effects.row1.name"] == "Night Vision" && f.ints["effects.row1.level"] == 1,
+          "multiple effects include exact strength and tick duration");
+    Check(f.ints["effects.ready"] == 1, "spare vector capacity after growth remains readable");
+    f.Put(header + 16, effects + (2 * EffectSlots + 1) * 16);
+    reader.Sample(f.host);
+    Check(f.ints["effects.ready"] == 0, "excessive reserved capacity rejected");
+    vector(EffectSlots);
+    effect(1, 3599, 1);
+    reader.Sample(f.host);
+    Check(f.texts["effects.row0.time"] == "2:59", "duration updates from game ticks");
+    reader.Sample(f.host);
+    Check(f.texts["effects.row0.time"] == "2:59", "paused game ticks do not advance time");
+    effect(1, 19, 255);
+    reader.Sample(f.host);
+    Check(f.texts["effects.row0.time"] == "0:00" && f.texts["effects.row0.strength"] == "256",
+          "last partial second and command-level strength remain valid");
+    effect(1, 0, 1);
+    reader.Sample(f.host);
+    Check(f.ints["effects.count"] == 1 && f.texts["effects.row0.name"] == "Night Vision" &&
+          f.ints["effects.row1.visible"] == 0 && f.texts["effects.row1.time"].empty(),
+          "expiration removes the effect and clears the unused row");
+    f.unreadable = effects;
+    reader.Sample(f.host);
+    Check(f.ints["effects.ready"] == 0 && f.ints["effects.count"] == 0 &&
+          f.texts["effects.status"] == "Waiting for effect data" &&
+          f.texts["effects.row0.name"].empty(), "read failure clears stale effects");
+    f.unreadable = 0;
+    for (const u64 at : {effects, header}) {
+        f.torn = at;
+        f.torn_reads = 0;
+        reader.Sample(f.host);
+        Check(f.ints["effects.ready"] == 0, "torn effect data or header rejected");
+    }
+    f.torn = 0;
+    for (const s32 bad : {-1, 256}) {
+        effect(1, 3600, bad);
+        reader.Sample(f.host);
+        Check(f.ints["effects.ready"] == 0, "invalid amplifier rejected");
+    }
+    effect(1, -1, 0);
+    reader.Sample(f.host);
+    Check(f.ints["effects.ready"] == 0, "negative duration rejected for this build");
+    effect(1, 3600, 0);
+    f.Put<s32>(effects + 16, 2);
+    reader.Sample(f.host);
+    Check(f.ints["effects.ready"] == 0, "mismatched registry index rejected");
+    effect(1, 3600, 0);
+    f.Put<u8>(effects + 16 + 14, 2);
+    reader.Sample(f.host);
+    Check(f.ints["effects.ready"] == 0, "invalid effect flags rejected");
+    effect(1, 3600, 0);
+    for (const u64 end : {effects - 16, effects + 17, effects + (EffectSlots + 1) * 16}) {
+        f.Put(header + 8, end);
+        f.Put(header + 16, end);
+        reader.Sample(f.host);
+        Check(f.ints["effects.ready"] == 0, "malformed or excessive vector rejected");
+    }
+    vector(EffectSlots);
+    for (int id = 1; id < static_cast<int>(EffectSlots); ++id)
+        effect(id, 3600, 0);
+    reader.Sample(f.host);
+    Check(f.ints["effects.count"] == 25 && f.ints["effects.can_next"] == 1 &&
+          f.ints["effects.can_prev"] == 0, "all supported effects can be paged");
+    for (int page = 0; page < 8; ++page)
+        Check(reader.OnAction("effects_next", 0), "next page action handled");
+    reader.Sample(f.host);
+    Check(f.ints["effects.row0.id"] == 25 && f.ints["effects.row1.visible"] == 0 &&
+          f.ints["effects.can_next"] == 0 && f.texts["effects.page"] == "25-25 of 25",
+          "last page clamps and exposes final effect");
+    reader.OnAction("effects_previous", 0);
+    reader.Sample(f.host);
+    Check(f.ints["effects.row0.id"] == 17, "previous page changes the visible effects");
+    vector(2);
+    reader.Sample(f.host);
+    Check(f.ints["effects.row0.id"] == 1 && f.texts["effects.page"] == "1-1 of 1" &&
+          f.ints["effects.can_prev"] == 0, "expiration clamps pages back to live entries");
+    f.unreadable = f.stacks;
+    f.Put<u64>(f.inventory + f.layout->inv_player, 0);
+    reader.Sample(f.host);
+    Check(f.ints["effects.ready"] == 0 && f.ints["effects.row0.visible"] == 0,
+          "world unload clears active effects");
+    Fixture modern(true);
+    Reader modern_reader(modern.host, nullptr);
+    modern_reader.Sample(modern.host);
+    Check(modern.ints["effects.ready"] == 0 &&
+          modern.texts["effects.status"] == "Effects unavailable for this version",
+          "unsupported effects stay unavailable");
+}
+
 int main() {
+    TestEffects();
     Fixture f;
     Reader reader(f.host, nullptr);
     f.Stack(f.stacks, f.item, 0);

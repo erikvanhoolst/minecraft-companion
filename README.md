@@ -52,6 +52,12 @@ Above the inventory, Minecraft-style HUD indicators show:
 
 These values are available for Minecraft **1.2.12**. If a value cannot be read reliably, the app hides the corresponding HUD row.
 
+### Active potion effects
+
+Open **Effects** on the second screen to see active effects while you keep playing, without opening Minecraft's inventory. Each row shows the effect name, strength (I, II, and so on), and remaining time as minutes:seconds. The countdown follows the game's ticks, including pauses. Expired or removed effects disappear automatically.
+
+**Previous** and **Next** show additional effects when more than eight are active. **No active effects** means the player was read successfully; unreadable data instead shows **Waiting for effect data** and clears old rows. Effects are available for Minecraft **1.2.12**; the experimental 1.26.13 build displays an unavailable message. Names use the game's English language file with readable fallback names. See [effect controls and behavior](docs/features/effects.md).
+
 ### Map and navigation
 
 The **Map** tab shows a top-down view of the terrain around your character:
@@ -102,7 +108,7 @@ For Android, edit a local copy of the installed manifest with the device's absol
 
 ### Controls and status messages
 
-Tap **Inventory**, **Map**, **Waypoints** or **Projects** at the top to switch tabs. You can also swipe left on the inventory page to open the map, or swipe right on the map page to return.
+Tap **Inventory**, **Map**, **Waypoints**, **Projects** or **Effects** at the top to switch tabs. You can also swipe left on the inventory page to open the map, or swipe right on the map page to return.
 
 Until a valid inventory has been read, the app displays **Waiting for a world** with a diagnostic message. This may take a moment while a world is loading. The map page displays **No map yet** when map data is not yet available.
 
@@ -119,7 +125,7 @@ Until a valid inventory has been read, the app displays **Waiting for a world** 
 | Minecraft | Build ID prefix | Status |
 |---|---|---|
 | 1.2.12 (base game without updates) | `D8B7E605E809E80C` | Inventory tested on the AYN Thor and desktop. Armor, health, air, hunger, item names, and the map tested on desktop. |
-| 1.26.13 (update v148) | `53E6D516A4DA5CD0` | Experimental memory layout, not tested in a running world. This game version does not run on the handheld with Eden Duo 1.1.0 and renders a black screen on desktop. HUD indicators, equipment, durability, and the map are unavailable for this build. |
+| 1.26.13 (update v148) | `53E6D516A4DA5CD0` | Experimental memory layout, not tested in a running world. This game version does not run on the handheld with Eden Duo 1.1.0 and renders a black screen on desktop. HUD indicators, equipment, durability, potion effects, and the map are unavailable for this build. |
 
 Use Eden Duo **1.1.0 with runtime 18 or later**. The module accepts only the full build IDs recorded in the source code; other Minecraft updates are not automatically supported. Use the tested 1.2.12 base game for normal play.
 
