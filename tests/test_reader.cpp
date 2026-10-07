@@ -116,6 +116,10 @@ int main() {
     Reader reader(f.host, nullptr);
     f.Stack(f.stacks, f.item, 0);
     reader.Sample(f.host);
+    Check(reader.InventoryState().ready && reader.InventoryState().selected == 0 &&
+          reader.InventoryState().slots[0].id == "diamond_pickaxe" &&
+          reader.InventoryState().slots[0].count == 1,
+          "public snapshot has readable identity and count");
     Check(f.ints["inv.ready"] == 1 && f.ints["equip.ready"] == 1, "snapshot ready");
     Check(f.ints["inv.slot0.dur"] == 100 && f.ints["inv.slot0.remaining"] == 1561,
           "new pickaxe is fully durable");
@@ -127,6 +131,7 @@ int main() {
           "warning does not round down across the threshold");
     f.Stack(f.stacks, f.item, 1405);
     reader.Sample(f.host);
+    Check(reader.InventoryState().slots[0].aux == 1405, "public snapshot preserves aux");
     Check(f.ints["inv.pickaxe_low"] == 1 && f.ints["inv.slot0.dur"] == 10,
           "worn selected pickaxe warns at 10%");
     Check(f.texts["inv.tool_durability"] == "156 / 1561 (10%)", "selected durability text");
@@ -215,6 +220,8 @@ int main() {
     reader.Sample(f.host);
     Check(f.ints["inv.ready"] == 0 && f.ints["inv.pickaxe_low"] == 0 &&
           f.texts["inv.tool_durability"].empty(), "torn inventory clears active tool state");
+    Check(!reader.InventoryState().ready && reader.InventoryState().slots[0].id.empty(),
+          "torn read clears public inventory snapshot");
     f.torn = 0;
     f.Vector(f.player + f.layout->player_armor, f.armor, ArmorSlotCount);
     reader.Sample(f.host);
@@ -232,5 +239,8 @@ int main() {
     Check(modern.ints["inv.ready"] == 1 && modern.ints["equip.ready"] == 0 &&
           modern.ints["inv.slot0.dur"] == -1 && modern.ints["inv.pickaxe_low"] == 0,
           "unlocated modern equipment/damage fields stay unavailable");
+    modern_reader.OnAction("rescan", 0);
+    Check(!modern_reader.InventoryState().ready && modern_reader.InventoryState().slots[0].id.empty(),
+          "rescan invalidates public inventory snapshot");
     std::puts("Reader equipment and durability checks passed");
 }

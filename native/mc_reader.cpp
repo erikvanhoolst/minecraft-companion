@@ -707,6 +707,13 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
         for (Slot& slot : slots)
             NameSlot(host, slot, assets);
     }
+    snapshot = {};
+    snapshot.ready = ready;
+    snapshot.selected = ready ? selected : -1;
+    if (ready)
+        for (std::size_t i = 0; i < SlotCount; ++i)
+            snapshot.slots[i] = {slots[i].count, slots[i].aux, slots[i].id,
+                                 slots[i].name, slots[i].icon};
     Publish(host, slots, selected, ready, diag.c_str());
     PlayerStats stats = ready ? ReadPlayer(host) : PlayerStats{};
     if (stats.equipment_ok)
@@ -722,6 +729,7 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
 
 bool Reader::OnAction(const char* action, s64) {
     if (action && std::strcmp(action, "rescan") == 0) {
+        snapshot = {};
         inventory = 0;
         player_inventory = 0;
         player = 0;

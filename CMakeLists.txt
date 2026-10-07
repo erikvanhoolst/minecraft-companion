@@ -26,6 +26,8 @@ add_library(mc_companion SHARED
     native/mc_waypoints.h
     native/mc_names.cpp
     native/mc_names.h
+    native/mc_projects.cpp
+    native/mc_projects.h
     native/mc_reader.cpp
     native/mc_reader.h
     native/mc_zip.cpp
@@ -76,4 +78,8 @@ if(BUILD_TESTING AND NOT ANDROID)
     target_compile_features(mc_waypoint_tests PRIVATE cxx_std_20)
     target_include_directories(mc_waypoint_tests PRIVATE native native/sdk native/third_party)
     add_test(NAME mc_waypoints COMMAND mc_waypoint_tests)
+    add_executable(mc_projects_tests tests/test_projects.cpp native/mc_projects.cpp)
+    target_compile_features(mc_projects_tests PRIVATE cxx_std_20)
+    target_include_directories(mc_projects_tests PRIVATE native native/sdk native/third_party)
+    add_test(NAME mc_projects COMMAND mc_projects_tests)
 endif()

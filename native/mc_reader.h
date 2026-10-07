@@ -125,6 +125,18 @@ bool SupportsBuildHex(const char* build_hex);
 bool SupportsBuildId(const u8* build_id);
 const Layout* FindLayout(const u8* build_id);
 
+/// A detached copy of the last sample; ready=false never represents an empty inventory.
+struct InventoryItem {
+    int count{};
+    int aux{};
+    std::string id, name, icon;
+};
+struct InventorySnapshot {
+    bool ready{};
+    int selected{-1};
+    std::array<InventoryItem, SlotCount> slots{};
+};
+
 class Reader {
 public:
     Reader(const EdenDsmodHostApi& host, const char* config_json);
@@ -132,6 +144,8 @@ public:
     /// `assets` supplies the display names (from the game's language file) once it has loaded.
     void Sample(const EdenDsmodHostApi& host, const mc_assets::Library* assets = nullptr);
     bool OnAction(const char* action, s64 argument);
+
+    const InventorySnapshot& InventoryState() const { return snapshot; }
 
     const Layout* ActiveLayout() const { return layout; }
     u64 Inventory() const { return inventory; }
@@ -178,6 +192,7 @@ private:
     void PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stats);
     void PublishSlot(const EdenDsmodHostApi& host, const char* prefix, const Slot& slot, bool ready);
 
+    InventorySnapshot snapshot;
     const Layout* layout{};
     u64 main_base{};
     u64 main_size{};

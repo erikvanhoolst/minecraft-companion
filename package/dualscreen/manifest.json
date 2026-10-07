@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft (Bedrock Edition, Switch) second-screen companion with two tabs. Inventory: the player's armor, health, air and hunger as the game's HUD draws them, above the 9x4 inventory grid (27 main slots above the 9 hotbar slots), separate helmet, chestplate, leggings and boots below the grid, durability bars for damageable items and a quiet warning at 10% or less durability on the selected pickaxe (Minecraft 1.2.12), item icons decoded by the native module from the player's own romfs resource packs, stack counts, the selected hotbar slot and its name as the game shows it, in the game's own font. Map: the chunks the game holds around the player, drawn by the module the way the game's map item draws them (each block's own map colour, shaded by height and water depth), on the game's map paper with its player marker, plus the player's coordinates and heading. The package ships no game assets. Waypoints: mark bases, villages, mines or places; choose a destination for a heading-relative arrow and horizontal distance, with separate lists per confirmed world and dimension.",
+ "_about": "Minecraft second-screen companion: live inventory, equipment and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation; build projects with live inventory material counts. Assets come from the player’s own game.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -63,6 +63,70 @@
      ],
      "bg": "#FF1E1E1E",
      "color": "#00000000"
+    },
+    {
+     "type": "button",
+     "rect": [
+      132,
+      14,
+      228,
+      72
+     ],
+     "text": "Inventory",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_inventory"
+    },
+    {
+     "type": "button",
+     "rect": [
+      376,
+      14,
+      228,
+      72
+     ],
+     "text": "Map",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_map"
+    },
+    {
+     "type": "button",
+     "rect": [
+      620,
+      14,
+      228,
+      72
+     ],
+     "text": "Waypoints",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_waypoints"
+    },
+    {
+     "type": "button",
+     "rect": [
+      864,
+      14,
+      228,
+      72
+     ],
+     "text": "Projects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_projects"
     },
     {
      "type": "label",
@@ -136,50 +200,66 @@
     {
      "type": "button",
      "rect": [
-      254,
+      132,
       14,
       228,
       72
      ],
      "text": "Inventory",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_inventory",
-     "bg": "#FF4A4A4A",
-     "color": "#FFFFFFFF"
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_inventory"
     },
     {
      "type": "button",
      "rect": [
-      498,
+      376,
       14,
       228,
       72
      ],
      "text": "Map",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_map",
      "bg": "#FF262626",
-     "color": "#FF8A8A8A"
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_map"
     },
     {
      "type": "button",
      "rect": [
-      742,
+      620,
       14,
       228,
       72
      ],
      "text": "Waypoints",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_waypoints",
      "bg": "#FF262626",
-     "color": "#FF8A8A8A"
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_waypoints"
+    },
+    {
+     "type": "button",
+     "rect": [
+      864,
+      14,
+      228,
+      72
+     ],
+     "text": "Projects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_projects"
     },
     {
      "_note": "swipe left for the map",
@@ -1166,50 +1246,66 @@
     {
      "type": "button",
      "rect": [
-      254,
+      132,
       14,
       228,
       72
      ],
      "text": "Inventory",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_inventory",
      "bg": "#FF262626",
-     "color": "#FF8A8A8A"
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_inventory"
     },
     {
      "type": "button",
      "rect": [
-      498,
+      376,
       14,
       228,
       72
      ],
      "text": "Map",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_map",
-     "bg": "#FF4A4A4A",
-     "color": "#FFFFFFFF"
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_map"
     },
     {
      "type": "button",
      "rect": [
-      742,
+      620,
       14,
       228,
       72
      ],
      "text": "Waypoints",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_waypoints",
      "bg": "#FF262626",
-     "color": "#FF8A8A8A"
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_waypoints"
+    },
+    {
+     "type": "button",
+     "rect": [
+      864,
+      14,
+      228,
+      72
+     ],
+     "text": "Projects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_projects"
     },
     {
      "_note": "swipe right for the inventory",
@@ -1224,6 +1320,18 @@
      "color": "#00000000",
      "frame": 0,
      "on_swipe_right": "page_inventory"
+    },
+    {
+     "_note": "Discovered terrain is retained per confirmed world and dimension; unknown ground stays paper.",
+     "type": "image",
+     "rect": [
+      24,
+      104,
+      864,
+      864
+     ],
+     "color": "#FFFFFFFF",
+     "src": "module:mc:map/map_background"
     },
     {
      "_note": "the previous picture underneath, so the map never blinks while the next one loads",
@@ -1530,18 +1638,6 @@
      "color": "#FFFFFFFF"
     },
     {
-     "_note": "Terrain discovered in the confirmed world/dimension remains after its chunks unload; unknown ground stays paper.",
-     "type": "image",
-     "rect": [
-      24,
-      104,
-      864,
-      864
-     ],
-     "color": "#FFFFFFFF",
-     "src": "module:mc:map/map_background"
-    },
-    {
      "type": "label",
      "rect": [
       24,
@@ -1641,7 +1737,8 @@
      "bg": "#FF262626",
      "color": "#FFFFFFFF"
     }
-   ]
+   ],
+   "no_auto_leave": true
   },
   {
    "id": "waypoints",
@@ -1661,50 +1758,66 @@
     {
      "type": "button",
      "rect": [
-      254,
+      132,
       14,
       228,
       72
      ],
      "text": "Inventory",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_inventory",
      "bg": "#FF262626",
-     "color": "#FF8A8A8A"
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_inventory"
     },
     {
      "type": "button",
      "rect": [
-      498,
+      376,
       14,
       228,
       72
      ],
      "text": "Map",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_map",
      "bg": "#FF262626",
-     "color": "#FF8A8A8A"
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_map"
     },
     {
      "type": "button",
      "rect": [
-      742,
+      620,
       14,
       228,
       72
      ],
      "text": "Waypoints",
-     "text_scale": 4,
+     "text_scale": 3,
      "align": "center",
-     "border": 4,
-     "on_tap": "page_waypoints",
-     "bg": "#FF4A4A4A",
-     "color": "#FFFFFFFF"
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_waypoints"
+    },
+    {
+     "type": "button",
+     "rect": [
+      864,
+      14,
+      228,
+      72
+     ],
+     "text": "Projects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_projects"
     },
     {
      "type": "label",
@@ -2327,7 +2440,1189 @@
      "color": "#FF707880",
      "bind_text": "waypoint.storage"
     }
-   ]
+   ],
+   "no_auto_leave": true
+  },
+  {
+   "id": "projects",
+   "title": "Projects",
+   "widgets": [
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      1240,
+      1080
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#00000000"
+    },
+    {
+     "type": "button",
+     "rect": [
+      132,
+      14,
+      228,
+      72
+     ],
+     "text": "Inventory",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_inventory"
+    },
+    {
+     "type": "button",
+     "rect": [
+      376,
+      14,
+      228,
+      72
+     ],
+     "text": "Map",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_map"
+    },
+    {
+     "type": "button",
+     "rect": [
+      620,
+      14,
+      228,
+      72
+     ],
+     "text": "Waypoints",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_waypoints"
+    },
+    {
+     "type": "button",
+     "rect": [
+      864,
+      14,
+      228,
+      72
+     ],
+     "text": "Projects",
+     "text_scale": 3,
+     "align": "center",
+     "bg": "#FF3E3E3E",
+     "color": "#FFFFFFFF",
+     "border": 3,
+     "on_tap": "page_projects"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      112,
+      0,
+      0
+     ],
+     "text_scale": 5,
+     "color": "#FFFFFFFF",
+     "bind_text": "projects.name"
+    },
+    {
+     "type": "button",
+     "rect": [
+      860,
+      106,
+      154,
+      60
+     ],
+     "text": "Previous",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_previous",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1030,
+      106,
+      154,
+      60
+     ],
+     "text": "Next",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_next",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      176,
+      190,
+      60
+     ],
+     "text": "New project",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_new",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      274,
+      176,
+      190,
+      60
+     ],
+     "text": "Name",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_name",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      480,
+      176,
+      220,
+      60
+     ],
+     "text": "Delete project",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_delete",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "!projects.delete_armed"
+    },
+    {
+     "type": "button",
+     "rect": [
+      480,
+      176,
+      220,
+      60
+     ],
+     "text": "Confirm delete",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_delete_confirm",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.delete_armed"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1184,
+      190,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "projects.position"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      256,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "bind_text": "projects.summary"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      298,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "text": "Material"
+    },
+    {
+     "type": "label",
+     "rect": [
+      774,
+      298,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "text": "Need"
+    },
+    {
+     "type": "label",
+     "rect": [
+      972,
+      298,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "text": "Have"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1184,
+      298,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "text": "Left"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      336,
+      1116,
+      62
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_row_0",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row0.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      356,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row0.visible",
+     "bind_text": "projects.row0.name"
+    },
+    {
+     "type": "value",
+     "rect": [
+      758,
+      356,
+      0,
+      0
+     ],
+     "bind": "projects.row0.required",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row0.visible"
+    },
+    {
+     "type": "value",
+     "rect": [
+      956,
+      356,
+      0,
+      0
+     ],
+     "bind": "projects.row0.owned",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row0.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      956,
+      356,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row0.visible",
+     "hide_bind": "projects.row0.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1168,
+      356,
+      0,
+      0
+     ],
+     "bind": "projects.row0.missing",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row0.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1168,
+      356,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row0.visible",
+     "hide_bind": "projects.row0.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      408,
+      1116,
+      62
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_row_1",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row1.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      428,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row1.visible",
+     "bind_text": "projects.row1.name"
+    },
+    {
+     "type": "value",
+     "rect": [
+      758,
+      428,
+      0,
+      0
+     ],
+     "bind": "projects.row1.required",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row1.visible"
+    },
+    {
+     "type": "value",
+     "rect": [
+      956,
+      428,
+      0,
+      0
+     ],
+     "bind": "projects.row1.owned",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row1.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      956,
+      428,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row1.visible",
+     "hide_bind": "projects.row1.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1168,
+      428,
+      0,
+      0
+     ],
+     "bind": "projects.row1.missing",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row1.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1168,
+      428,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row1.visible",
+     "hide_bind": "projects.row1.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      480,
+      1116,
+      62
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_row_2",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row2.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      500,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row2.visible",
+     "bind_text": "projects.row2.name"
+    },
+    {
+     "type": "value",
+     "rect": [
+      758,
+      500,
+      0,
+      0
+     ],
+     "bind": "projects.row2.required",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row2.visible"
+    },
+    {
+     "type": "value",
+     "rect": [
+      956,
+      500,
+      0,
+      0
+     ],
+     "bind": "projects.row2.owned",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row2.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      956,
+      500,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row2.visible",
+     "hide_bind": "projects.row2.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1168,
+      500,
+      0,
+      0
+     ],
+     "bind": "projects.row2.missing",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row2.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1168,
+      500,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row2.visible",
+     "hide_bind": "projects.row2.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      552,
+      1116,
+      62
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_row_3",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row3.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      572,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row3.visible",
+     "bind_text": "projects.row3.name"
+    },
+    {
+     "type": "value",
+     "rect": [
+      758,
+      572,
+      0,
+      0
+     ],
+     "bind": "projects.row3.required",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row3.visible"
+    },
+    {
+     "type": "value",
+     "rect": [
+      956,
+      572,
+      0,
+      0
+     ],
+     "bind": "projects.row3.owned",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row3.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      956,
+      572,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row3.visible",
+     "hide_bind": "projects.row3.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1168,
+      572,
+      0,
+      0
+     ],
+     "bind": "projects.row3.missing",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row3.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1168,
+      572,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row3.visible",
+     "hide_bind": "projects.row3.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      624,
+      1116,
+      62
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_row_4",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row4.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      644,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row4.visible",
+     "bind_text": "projects.row4.name"
+    },
+    {
+     "type": "value",
+     "rect": [
+      758,
+      644,
+      0,
+      0
+     ],
+     "bind": "projects.row4.required",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row4.visible"
+    },
+    {
+     "type": "value",
+     "rect": [
+      956,
+      644,
+      0,
+      0
+     ],
+     "bind": "projects.row4.owned",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row4.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      956,
+      644,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row4.visible",
+     "hide_bind": "projects.row4.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1168,
+      644,
+      0,
+      0
+     ],
+     "bind": "projects.row4.missing",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row4.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1168,
+      644,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row4.visible",
+     "hide_bind": "projects.row4.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      696,
+      1116,
+      62
+     ],
+     "text": "",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_row_5",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row5.visible"
+    },
+    {
+     "type": "label",
+     "rect": [
+      88,
+      716,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row5.visible",
+     "bind_text": "projects.row5.name"
+    },
+    {
+     "type": "value",
+     "rect": [
+      758,
+      716,
+      0,
+      0
+     ],
+     "bind": "projects.row5.required",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row5.visible"
+    },
+    {
+     "type": "value",
+     "rect": [
+      956,
+      716,
+      0,
+      0
+     ],
+     "bind": "projects.row5.owned",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row5.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      956,
+      716,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row5.visible",
+     "hide_bind": "projects.row5.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1168,
+      716,
+      0,
+      0
+     ],
+     "bind": "projects.row5.missing",
+     "text_scale": 3,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.row5.known"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1168,
+      716,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "need_bind": "projects.row5.visible",
+     "hide_bind": "projects.row5.known",
+     "keep_max": 0,
+     "text": "?"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      782,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "bind_text": "projects.selected"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1104,
+      786,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "projects.page"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      814,
+      112,
+      60
+     ],
+     "text": "-64",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_minus64",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.has_materials"
+    },
+    {
+     "type": "button",
+     "rect": [
+      192,
+      814,
+      112,
+      60
+     ],
+     "text": "-16",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_minus16",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.has_materials"
+    },
+    {
+     "type": "button",
+     "rect": [
+      316,
+      814,
+      112,
+      60
+     ],
+     "text": "-1",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_minus1",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.has_materials"
+    },
+    {
+     "type": "button",
+     "rect": [
+      440,
+      814,
+      112,
+      60
+     ],
+     "text": "+1",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_plus1",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.has_materials"
+    },
+    {
+     "type": "button",
+     "rect": [
+      564,
+      814,
+      112,
+      60
+     ],
+     "text": "+16",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_plus16",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.has_materials"
+    },
+    {
+     "type": "button",
+     "rect": [
+      688,
+      814,
+      112,
+      60
+     ],
+     "text": "+64",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_plus64",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.has_materials"
+    },
+    {
+     "type": "button",
+     "rect": [
+      868,
+      814,
+      316,
+      60
+     ],
+     "text": "Remove material",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_remove",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "projects.has_materials"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      906,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "text": "Add material:"
+    },
+    {
+     "type": "label",
+     "rect": [
+      440,
+      906,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "bind_text": "projects.choice"
+    },
+    {
+     "type": "button",
+     "rect": [
+      68,
+      940,
+      154,
+      60
+     ],
+     "text": "Previous",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_choice_previous",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      238,
+      940,
+      154,
+      60
+     ],
+     "text": "Next",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_choice_next",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      408,
+      940,
+      310,
+      60
+     ],
+     "text": "Add chosen material",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_add_choice",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      734,
+      940,
+      450,
+      60
+     ],
+     "text": "Add held hotbar item",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_add_selected",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "label",
+     "rect": [
+      68,
+      1014,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFBBC3CB",
+     "bind_text": "projects.message"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1184,
+      1046,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FF9AA4B0",
+     "align": "right",
+     "bind_text": "projects.storage"
+    },
+    {
+     "type": "button",
+     "rect": [
+      784,
+      770,
+      64,
+      42
+     ],
+     "text": "<",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_page_previous",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1120,
+      770,
+      64,
+      42
+     ],
+     "text": ">",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "projects_page_next",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    }
+   ],
+   "no_auto_leave": true
   }
  ],
  "actions": {
@@ -2463,6 +3758,137 @@
   "map_routes": {
    "kind": "module",
    "action": "map_routes",
+   "haptic": "click"
+  },
+  "page_projects": {
+   "kind": "page",
+   "page": "projects",
+   "transition": "fade",
+   "duration_ms": 200
+  },
+  "projects_previous": {
+   "kind": "module",
+   "action": "projects_previous",
+   "haptic": "click"
+  },
+  "projects_next": {
+   "kind": "module",
+   "action": "projects_next",
+   "haptic": "click"
+  },
+  "projects_new": {
+   "kind": "module",
+   "action": "projects_new",
+   "haptic": "click"
+  },
+  "projects_name": {
+   "kind": "module",
+   "action": "projects_name",
+   "haptic": "click"
+  },
+  "projects_delete": {
+   "kind": "module",
+   "action": "projects_delete",
+   "haptic": "click"
+  },
+  "projects_delete_confirm": {
+   "kind": "module",
+   "action": "projects_delete_confirm",
+   "haptic": "click"
+  },
+  "projects_row_0": {
+   "kind": "module",
+   "action": "projects_row_0",
+   "haptic": "click"
+  },
+  "projects_row_1": {
+   "kind": "module",
+   "action": "projects_row_1",
+   "haptic": "click"
+  },
+  "projects_row_2": {
+   "kind": "module",
+   "action": "projects_row_2",
+   "haptic": "click"
+  },
+  "projects_row_3": {
+   "kind": "module",
+   "action": "projects_row_3",
+   "haptic": "click"
+  },
+  "projects_row_4": {
+   "kind": "module",
+   "action": "projects_row_4",
+   "haptic": "click"
+  },
+  "projects_row_5": {
+   "kind": "module",
+   "action": "projects_row_5",
+   "haptic": "click"
+  },
+  "projects_minus64": {
+   "kind": "module",
+   "action": "projects_minus64",
+   "haptic": "click"
+  },
+  "projects_minus16": {
+   "kind": "module",
+   "action": "projects_minus16",
+   "haptic": "click"
+  },
+  "projects_minus1": {
+   "kind": "module",
+   "action": "projects_minus1",
+   "haptic": "click"
+  },
+  "projects_plus1": {
+   "kind": "module",
+   "action": "projects_plus1",
+   "haptic": "click"
+  },
+  "projects_plus16": {
+   "kind": "module",
+   "action": "projects_plus16",
+   "haptic": "click"
+  },
+  "projects_plus64": {
+   "kind": "module",
+   "action": "projects_plus64",
+   "haptic": "click"
+  },
+  "projects_remove": {
+   "kind": "module",
+   "action": "projects_remove",
+   "haptic": "click"
+  },
+  "projects_choice_previous": {
+   "kind": "module",
+   "action": "projects_choice_previous",
+   "haptic": "click"
+  },
+  "projects_choice_next": {
+   "kind": "module",
+   "action": "projects_choice_next",
+   "haptic": "click"
+  },
+  "projects_add_choice": {
+   "kind": "module",
+   "action": "projects_add_choice",
+   "haptic": "click"
+  },
+  "projects_add_selected": {
+   "kind": "module",
+   "action": "projects_add_selected",
+   "haptic": "click"
+  },
+  "projects_page_previous": {
+   "kind": "module",
+   "action": "projects_page_previous",
+   "haptic": "click"
+  },
+  "projects_page_next": {
+   "kind": "module",
+   "action": "projects_page_next",
    "haptic": "click"
   }
  },
