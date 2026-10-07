@@ -86,6 +86,17 @@ When readable health drops from above zero to zero, the companion automatically 
 
 **Death trail: On/Off** optionally shows the route recorded before that death in red on Map. It starts off; the marker, frozen trail and setting save locally. Respawning starts a new recording without changing the saved return trail. **Stop** keeps the marker; **Delete** while Death is selected removes it and its trail. Confirm the actual world and dimension on Map first. Detection requires readable health and position (Minecraft 1.2.12); see [death location details](docs/features/death-location.md).
 
+### Day clock
+
+A fixed bar below the tabs shows the Overworld's time as **World HH:MM** and an
+estimated **Sunset in ~MM:SS**. The final minute turns amber. After sunset it counts
+down to the next sunset. Sleeping, pausing and time commands follow the game's
+current time; a disabled daylight cycle shows **Daylight cycle off**.
+
+Available for Minecraft **1.2.12**. Nether and End show that there is no sunset;
+unreadable data and the experimental 1.26.13 build show an unavailable state. The
+estimate assumes 20 game ticks per second. See [day clock details](docs/features/day-clock.md).
+
 ### Build projects
 
 Open **Projects**, create a list, and add building materials from the picker or your held hotbar item. Tap a row and adjust its required quantity with **±1**, **±16** and **±64**. For example, track 128 cobblestone, 32 oak planks and 16 glass.
@@ -165,7 +176,7 @@ Game files, emulator keys such as `prod.keys` and `title.keys`, passwords, and a
 
 | Directory | Contents |
 |---|---|
-| `native/` | The C++ module: memory reader (`mc_reader`), map and saved exploration (`mc_map`, `mc_exploration`), waypoints (`mc_waypoints`), build projects (`mc_projects`), icons and font (`mc_assets`, `mc_zip`), item names (`mc_names`), and research console (`mc_debug`). Also includes the required ABI headers and third-party libraries. |
+| `native/` | The C++ module: memory reader (`mc_reader`), day clock (`mc_clock`), map and saved exploration (`mc_map`, `mc_exploration`), waypoints (`mc_waypoints`), build projects (`mc_projects`), icons and font (`mc_assets`, `mc_zip`), item names (`mc_names`), and research console (`mc_debug`). Also includes the required ABI headers and third-party libraries. |
 | `package/` | `package.json`, `dualscreen/manifest.json` (bottom-screen pages), and `dualscreen/mc_font.txt` (a reference to the game's font) |
 | `scripts/` | Building, installation, and testing on desktop and the Thor |
 | `research/` | Analysis scripts for the game executable and resource packs |

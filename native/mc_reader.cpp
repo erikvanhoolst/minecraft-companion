@@ -106,6 +106,20 @@ constexpr Layout Layouts[] = {
         .player_armor = 0x1118,
         .vt_armor_item = 0x2baa6d0,
         .armor_defense = 0xD8, // leather helmet 1, iron chestplate 6, diamond chestplate 8
+        // ClockItem: Actor::getRegion +0xCC8 -> BlockSource::getDimension +0x28.
+        // Dimension::getTimeOfDay uses Level* +0x30; Level::getTime (main+0x13BC1E4)
+        // -> embedded LevelData +0xF8 -> s32 +0xD4 (main+0x1439170).
+        // LevelData::getGameRules +0x8; GameRules::getBool uses 32-byte entries,
+        // bool +4. Dimension::getId +0xF4. Verified by read-only desktop probes.
+        .player_block_source = 0xCC8,
+        .vt_block_source = 0x2BDDC58,
+        .source_dimension = 0x28,
+        .dimension_level = 0x30,
+        .dimension_id = 0xF4,
+        .vt_dimensions = {0x2BDFA28, 0x2BDF788, 0x2BDF4D8},
+        .vt_levels = {0x2BDFCC8, 0x2AC7408, 0x2B756F8},
+        .level_time = 0x1CC,
+        .level_game_rules = 0x100,
         // Map (live): walking forward moved the position along (-sin yaw, cos yaw). The player
         // holds two PlayerChunkSources; the larger one is the client's view, a 27 x 27 chunk
         // grid of shared_ptr<LevelChunk> at the default view distance. A sub chunk is 4096 legacy

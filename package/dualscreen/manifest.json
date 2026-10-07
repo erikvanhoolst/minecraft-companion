@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft second-screen companion: live inventory, equipment, active potion effects and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts. Assets come from the player’s own game.",
+ "_about": "Minecraft second-screen companion: live inventory, equipment, active potion effects and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts; world time and sunset countdown. Assets come from the player’s own game.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -117,9 +117,9 @@
      "type": "button",
      "rect": [
       38,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Inventory",
      "text_scale": 3,
@@ -133,9 +133,9 @@
      "type": "button",
      "rect": [
       274,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Map",
      "text_scale": 3,
@@ -149,9 +149,9 @@
      "type": "button",
      "rect": [
       510,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Waypoints",
      "text_scale": 3,
@@ -165,9 +165,9 @@
      "type": "button",
      "rect": [
       746,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Projects",
      "text_scale": 3,
@@ -181,9 +181,9 @@
      "type": "button",
      "rect": [
       982,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Effects",
      "text_scale": 3,
@@ -244,6 +244,58 @@
      "text_scale": 2,
      "align": "center",
      "color": "#FFB05050"
+    },
+    {
+     "_note": "Day clock below the tabs; approximate real minutes at 20 game ticks/s.",
+     "type": "rect",
+     "rect": [
+      0,
+      64,
+      1240,
+      36
+     ],
+     "bg": "#FF262626",
+     "color": "#00000000"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE6ECF2",
+     "bind_text": "clock.time"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "!clock.soon"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFC857",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "clock.soon"
     }
    ]
   },
@@ -266,9 +318,9 @@
      "type": "button",
      "rect": [
       38,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Inventory",
      "text_scale": 3,
@@ -282,9 +334,9 @@
      "type": "button",
      "rect": [
       274,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Map",
      "text_scale": 3,
@@ -298,9 +350,9 @@
      "type": "button",
      "rect": [
       510,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Waypoints",
      "text_scale": 3,
@@ -314,9 +366,9 @@
      "type": "button",
      "rect": [
       746,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Projects",
      "text_scale": 3,
@@ -330,9 +382,9 @@
      "type": "button",
      "rect": [
       982,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Effects",
      "text_scale": 3,
@@ -1645,6 +1697,58 @@
      "text_scale": 2,
      "color": "#FFC5A45B",
      "need_bind": "ui.detail_pickaxe_low"
+    },
+    {
+     "_note": "Day clock below the tabs; approximate real minutes at 20 game ticks/s.",
+     "type": "rect",
+     "rect": [
+      0,
+      64,
+      1240,
+      36
+     ],
+     "bg": "#FF262626",
+     "color": "#00000000"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE6ECF2",
+     "bind_text": "clock.time"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "!clock.soon"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFC857",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "clock.soon"
     }
    ]
   },
@@ -1667,9 +1771,9 @@
      "type": "button",
      "rect": [
       38,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Inventory",
      "text_scale": 3,
@@ -1683,9 +1787,9 @@
      "type": "button",
      "rect": [
       274,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Map",
      "text_scale": 3,
@@ -1699,9 +1803,9 @@
      "type": "button",
      "rect": [
       510,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Waypoints",
      "text_scale": 3,
@@ -1715,9 +1819,9 @@
      "type": "button",
      "rect": [
       746,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Projects",
      "text_scale": 3,
@@ -1731,9 +1835,9 @@
      "type": "button",
      "rect": [
       982,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Effects",
      "text_scale": 3,
@@ -2245,6 +2349,58 @@
      "align": "center",
      "color": "#FFFF7474",
      "bind_text": "death.trail_label"
+    },
+    {
+     "_note": "Day clock below the tabs; approximate real minutes at 20 game ticks/s.",
+     "type": "rect",
+     "rect": [
+      0,
+      64,
+      1240,
+      36
+     ],
+     "bg": "#FF262626",
+     "color": "#00000000"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE6ECF2",
+     "bind_text": "clock.time"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "!clock.soon"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFC857",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "clock.soon"
     }
    ],
    "no_auto_leave": true
@@ -2268,9 +2424,9 @@
      "type": "button",
      "rect": [
       38,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Inventory",
      "text_scale": 3,
@@ -2284,9 +2440,9 @@
      "type": "button",
      "rect": [
       274,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Map",
      "text_scale": 3,
@@ -2300,9 +2456,9 @@
      "type": "button",
      "rect": [
       510,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Waypoints",
      "text_scale": 3,
@@ -2316,9 +2472,9 @@
      "type": "button",
      "rect": [
       746,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Projects",
      "text_scale": 3,
@@ -2332,9 +2488,9 @@
      "type": "button",
      "rect": [
       982,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Effects",
      "text_scale": 3,
@@ -3010,6 +3166,58 @@
      "align": "center",
      "color": "#FFFF7474",
      "bind_text": "death.trail_label"
+    },
+    {
+     "_note": "Day clock below the tabs; approximate real minutes at 20 game ticks/s.",
+     "type": "rect",
+     "rect": [
+      0,
+      64,
+      1240,
+      36
+     ],
+     "bg": "#FF262626",
+     "color": "#00000000"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE6ECF2",
+     "bind_text": "clock.time"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "!clock.soon"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFC857",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "clock.soon"
     }
    ],
    "no_auto_leave": true
@@ -3033,9 +3241,9 @@
      "type": "button",
      "rect": [
       38,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Inventory",
      "text_scale": 3,
@@ -3049,9 +3257,9 @@
      "type": "button",
      "rect": [
       274,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Map",
      "text_scale": 3,
@@ -3065,9 +3273,9 @@
      "type": "button",
      "rect": [
       510,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Waypoints",
      "text_scale": 3,
@@ -3081,9 +3289,9 @@
      "type": "button",
      "rect": [
       746,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Projects",
      "text_scale": 3,
@@ -3097,9 +3305,9 @@
      "type": "button",
      "rect": [
       982,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Effects",
      "text_scale": 3,
@@ -4207,6 +4415,58 @@
      "on_tap": "projects_page_next",
      "bg": "#FF262626",
      "color": "#FFFFFFFF"
+    },
+    {
+     "_note": "Day clock below the tabs; approximate real minutes at 20 game ticks/s.",
+     "type": "rect",
+     "rect": [
+      0,
+      64,
+      1240,
+      36
+     ],
+     "bg": "#FF262626",
+     "color": "#00000000"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE6ECF2",
+     "bind_text": "clock.time"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "!clock.soon"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFC857",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "clock.soon"
     }
    ],
    "no_auto_leave": true
@@ -4230,9 +4490,9 @@
      "type": "button",
      "rect": [
       38,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Inventory",
      "text_scale": 3,
@@ -4246,9 +4506,9 @@
      "type": "button",
      "rect": [
       274,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Map",
      "text_scale": 3,
@@ -4262,9 +4522,9 @@
      "type": "button",
      "rect": [
       510,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Waypoints",
      "text_scale": 3,
@@ -4278,9 +4538,9 @@
      "type": "button",
      "rect": [
       746,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Projects",
      "text_scale": 3,
@@ -4294,9 +4554,9 @@
      "type": "button",
      "rect": [
       982,
-      14,
+      8,
       220,
-      72
+      48
      ],
      "text": "Effects",
      "text_scale": 3,
@@ -4475,6 +4735,58 @@
      "border": 3,
      "on_tap": "effects_next",
      "need_bind": "effects.can_next"
+    },
+    {
+     "_note": "Day clock below the tabs; approximate real minutes at 20 game ticks/s.",
+     "type": "rect",
+     "rect": [
+      0,
+      64,
+      1240,
+      36
+     ],
+     "bg": "#FF262626",
+     "color": "#00000000"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFE6ECF2",
+     "bind_text": "clock.time"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFBBC3CB",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "!clock.soon"
+    },
+    {
+     "type": "label",
+     "rect": [
+      1210,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "color": "#FFFFC857",
+     "align": "right",
+     "bind_text": "clock.sunset",
+     "need_bind": "clock.soon"
     }
    ]
   }

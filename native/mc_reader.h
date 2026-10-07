@@ -112,6 +112,17 @@ struct Layout {
     u64 vt_armor_item{};      // ArmorItem (address point)
     u32 armor_defense{};      // int mDefense inside ArmorItem
 
+    // Day clock (1.2.12 getters and RTTI; unknown layouts leave the clock unavailable).
+    u32 player_block_source{}; // BlockSource* used by ClockItem
+    u64 vt_block_source{};
+    u32 source_dimension{};    // Dimension* inside BlockSource
+    u32 dimension_level{};     // Level* inside Dimension
+    u32 dimension_id{};        // int: 0 Overworld, 1 Nether, 2 End
+    std::array<u64, 3> vt_dimensions{};
+    std::array<u64, 3> vt_levels{}; // Level, MultiPlayerLevel, ServerLevel
+    u32 level_time{};          // s32 LevelData time (sun time, not the simulation tick count)
+    u32 level_game_rules{};    // vector<GameRule>; rule 1 is dodaylightcycle in this build
+
     // The map tab (mc_map.cpp): the player's place and the chunks the client holds around it
     u32 player_pos{};          // Vec3 position (eye height; feet = AABB min y)
     u32 player_aabb_min_y{};   // float: the bottom of the player's bounding box
