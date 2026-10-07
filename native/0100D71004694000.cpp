@@ -34,7 +34,7 @@ EdenDsmodBool SupportsBuild(const char* build_id) {
 }
 
 struct Module {
-    Module(const EdenDsmodHostApi& api, const char* config) : host{api}, reader{api, config} {}
+    Module(const EdenDsmodHostApi& api, const char* config) : host{api}, reader{api, config}, map{config} {}
 
     EdenDsmodBool LoadImage(const EdenDsmodHostApi* image_host, const char* key, void* receiver,
                             EdenDsmodImageSink sink) {

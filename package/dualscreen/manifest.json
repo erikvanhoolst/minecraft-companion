@@ -1196,7 +1196,7 @@
      "on_swipe_right": "page_inventory"
     },
     {
-     "_note": "the game's map paper; unloaded ground stays paper",
+     "_note": "Terrain discovered in the confirmed world/dimension remains after its chunks unload; unknown ground stays paper.",
      "type": "image",
      "rect": [
       24,
@@ -1442,18 +1442,104 @@
      "need_bind": "map.ready"
     },
     {
-     "type": "value",
+     "type": "label",
      "rect": [
-      1220,
-      1040,
+      24,
+      964,
       0,
       0
      ],
-     "bind": "map.render_us",
-     "suffix": " us",
+     "bind_text": "world.label",
      "text_scale": 2,
-     "align": "right",
-     "color": "#FF505860"
+     "color": "#FFBBC3CB"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      1064,
+      0,
+      0
+     ],
+     "bind_text": "world.diag",
+     "text_scale": 2,
+     "color": "#FFC5A45B"
+    },
+    {
+     "type": "label",
+     "rect": [
+      24,
+      936,
+      0,
+      0
+     ],
+     "bind_text": "map.history_diag",
+     "text_scale": 2,
+     "color": "#FFC5A45B"
+    },
+    {
+     "type": "button",
+     "rect": [
+      24,
+      992,
+      218,
+      64
+     ],
+     "text": "World",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "world_next",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      256,
+      992,
+      260,
+      64
+     ],
+     "text": "Dimension",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "world_dimension",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      530,
+      992,
+      218,
+      64
+     ],
+     "text": "Confirm",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "world_confirm",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      924,
+      992,
+      286,
+      64
+     ],
+     "text": "Routes",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "map_routes",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
     }
    ]
   }
@@ -1486,6 +1572,27 @@
    "kind": "module",
    "action": "map_zoom_out",
    "haptic": "click"
+  },
+  "world_next": {
+   "kind": "module",
+   "action": "world_next",
+   "haptic": "click"
+  },
+  "world_dimension": {
+   "kind": "module",
+   "action": "world_dimension",
+   "haptic": "click"
+  },
+  "world_confirm": {
+   "kind": "module",
+   "action": "world_confirm",
+   "haptic": "click"
+  },
+  "map_routes": {
+   "kind": "module",
+   "action": "map_routes",
+   "haptic": "click"
   }
- }
+ },
+ "_world_setup": "Optional top-level world_keys/world_key, world_dimension (0 Overworld, 1 Nether, 2 End), and absolute data_directory. Select and confirm the active world/dimension on Map before recording history or waypoints."
 }

@@ -25,6 +25,13 @@
 #include <atomic>
 #include <cstdint>
 #include <mutex>
+#include <condition_variable>
+#include <thread>
+#include <filesystem>
+#include <vector>
+#include <map>
+#include <chrono>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -33,6 +40,7 @@
 #include "core/mods/modules/dsmod_module_sdk.h"
 #include "mc_assets.h"
 #include "mc_reader.h"
+#include "mc_exploration.h"
 
 namespace mc_map {
 
@@ -40,24 +48,29 @@ using namespace dsmod_sdk::int_types;
 
 class Map {
 public:
+    explicit Map(const char* config = nullptr);
+    ~Map();
     /// Tick thread, after Reader::Sample. Cheap: it reads the player's place and asks for a new
-    /// picture; the picture is drawn by Load.
+    /// picture; a dedicated worker captures terrain even while the map tab is hidden.
     void Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader);
     /// Tick thread.
     bool OnAction(const char* action, s64 argument);
-    /// Asset worker: the picture for a "mapview/<n>" key (without "module:mc:"). The newest one
-    /// asked for is drawn here, reading the game's chunks, so the tick thread never waits for it
-    /// and nothing is drawn while the map is not on screen (the host only asks for what it shows).
+    /// Asset callback: fetch a completed picture for a "mapview/<n>" key.
     std::optional<mc_assets::Image> Load(const EdenDsmodHostApi& host, std::string_view key);
 
 private:
+    friend struct MapTestAccess;
     struct Place {
         double x{}, y{}, z{};
         float yaw{};
     };
     /// Everything a picture is drawn from, copied for the asset worker.
     struct Request {
-        u64 serial{};
+        u64 serial{}, generation{};
+        std::string world;
+        int dimension{};
+        bool scoped{}, route_start{};
+        int player_x{}, player_z{};
         int origin_x{}, origin_z{}, view{};
         u64 player{};
         const mc_reader::Layout* layout{};
@@ -73,9 +86,30 @@ private:
     static bool Render(const EdenDsmodHostApi& host, const Request& request,
                        mc_assets::Image& out, std::string& why);
     void Publish(const EdenDsmodHostApi& host, bool ready, const Place& place);
+    void Invalidate();
+    void Worker();
+    bool DrawRequest(const EdenDsmodHostApi& host, const Request& request);
 
     // Shared with the asset worker, under `mutex`.
     std::mutex mutex;
+    std::condition_variable wake;
+    std::thread worker;
+    bool stopping{};
+    EdenDsmodHostApi worker_host{};
+    u64 generation{1};
+    std::filesystem::path data_directory;
+    std::map<std::pair<std::string,int>, std::unique_ptr<mc_exploration::History>> histories; // worker only, at most four scopes
+    mc_exploration::History* history{};
+    std::chrono::steady_clock::time_point last_save{};
+    std::size_t history_tiles{}, history_route{};
+    std::string history_diag;
+    bool route_start{true};
+    std::vector<std::string> worlds;
+    std::size_t selected_world{};
+    int dimension{};
+    bool confirmed{}, player_was_ready{};
+    u64 previous_player{};
+    bool show_routes{true};
     Request pending;                 // the newest picture asked for
     std::array<Picture, 2> pictures; // the two newest drawn, newest first
     std::string render_diag;         // why the last drawing failed, or empty

@@ -18,6 +18,8 @@ add_library(mc_companion SHARED
     native/mc_assets.h
     native/mc_debug.cpp
     native/mc_debug.h
+    native/mc_exploration.cpp
+    native/mc_exploration.h
     native/mc_map.cpp
     native/mc_map.h
     native/mc_names.cpp
@@ -26,6 +28,8 @@ add_library(mc_companion SHARED
     native/mc_reader.h
     native/mc_zip.cpp
     native/mc_zip.h)
+find_package(Threads REQUIRED)
+target_link_libraries(mc_companion PRIVATE Threads::Threads)
 target_compile_features(mc_companion PRIVATE cxx_std_20)
 target_include_directories(mc_companion PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/native"
@@ -59,4 +63,11 @@ if(BUILD_TESTING AND NOT ANDROID)
     target_compile_features(mc_reader_tests PRIVATE cxx_std_20)
     target_include_directories(mc_reader_tests PRIVATE native native/sdk native/third_party)
     add_test(NAME mc_reader COMMAND mc_reader_tests)
+    add_executable(mc_exploration_tests tests/test_exploration.cpp
+        native/mc_exploration.cpp native/mc_map.cpp native/mc_reader.cpp
+        native/mc_assets.cpp native/mc_names.cpp native/mc_zip.cpp)
+    target_compile_features(mc_exploration_tests PRIVATE cxx_std_20)
+    target_include_directories(mc_exploration_tests PRIVATE native native/sdk native/third_party)
+    target_link_libraries(mc_exploration_tests PRIVATE Threads::Threads)
+    add_test(NAME mc_exploration COMMAND mc_exploration_tests)
 endif()

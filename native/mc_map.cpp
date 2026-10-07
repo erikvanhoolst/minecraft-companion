@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include "nlohmann/json.hpp"
 
 #include "mc_reader.h"
 
@@ -73,6 +74,70 @@ const char* FacingName(double heading) {
 }
 
 } // namespace
+
+Map::Map(const char* config) : data_directory{mc_exploration::DefaultDirectory()} {
+    const auto j = nlohmann::json::parse(config ? config : "{}", nullptr, false);
+    if (j.is_object()) {
+        const auto valid_key = [](const std::string& s) {
+            return !s.empty() && s.size() <= 128 && std::none_of(s.begin(), s.end(), [](unsigned char c) { return c < 32; });
+        };
+        if (j.contains("world_keys") && j["world_keys"].is_array())
+            for (const auto& key : j["world_keys"]) {
+                if (worlds.size() >= 32) break;
+                if (key.is_string()) {
+                    const auto text = key.get<std::string>();
+                    if (valid_key(text) && std::find(worlds.begin(), worlds.end(), text) == worlds.end()) worlds.push_back(text);
+                }
+            }
+        if (j.contains("world_key") && j["world_key"].is_string()) {
+            const auto key = j["world_key"].get<std::string>();
+            if (valid_key(key)) {
+                auto it = std::find(worlds.begin(), worlds.end(), key);
+                if (it == worlds.end() && worlds.size() < 32) { worlds.push_back(key); selected_world = worlds.size()-1; }
+                else if (it != worlds.end()) selected_world = it-worlds.begin();
+            }
+        }
+        if (j.contains("world_dimension") && j["world_dimension"].is_number_integer()) {
+            const auto d = j["world_dimension"].get<std::int64_t>();
+            if (d >= 0 && d <= 2) dimension = static_cast<int>(d);
+        }
+        if (j.contains("data_directory")) {
+            data_directory.clear();
+            if (j["data_directory"].is_string()) {
+                const auto path = j["data_directory"].get<std::string>();
+                if (path.find('\0') == std::string::npos && std::filesystem::path(path).is_absolute()) data_directory=path;
+            }
+        }
+    }
+}
+Map::~Map() {
+    { std::lock_guard lock{mutex}; stopping=true; wake.notify_all(); }
+    if (worker.joinable()) worker.join();
+}
+void Map::Invalidate() {
+    std::lock_guard lock{mutex};
+    ++generation;
+    pending = {};
+    pictures = {};
+    render_diag.clear(); history_diag.clear(); history_tiles=history_route=0;
+    // Serial numbers are never reused: old keys may remain in the host image cache.
+    want_picture=true; route_start=true;
+}
+void Map::Worker() {
+    u64 completed{};
+    for (;;) {
+        Request request; EdenDsmodHostApi host;
+        {
+            std::unique_lock lock{mutex};
+            wake.wait(lock,[&]{return stopping || (pending.serial && pending.serial!=completed);});
+            if (stopping) break;
+            request=pending; host=worker_host;
+        }
+        DrawRequest(host,request);
+        completed=request.serial;
+    }
+    for (auto& [scope,store]:histories) store->Save();
+}
 
 bool Map::ReadPlace(const EdenDsmodHostApi& host, const mc_reader::Reader& reader, Place& out) {
     const mc_reader::Layout* lay = reader.ActiveLayout();
@@ -254,6 +319,8 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
     int origin_x{}, origin_z{};
     std::string why;
     s64 us{};
+    std::string history_status;
+    std::size_t tiles{}, routes{};
     {
         std::lock_guard lock{mutex};
         const Picture& p = pictures[0].serial != serial ? pictures[0] : pictures[1];
@@ -262,8 +329,22 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
         origin_z = pictures[0].serial ? pictures[0].origin_z : pending.origin_z;
         why = render_diag;
         us = render_us;
+        history_status=history_diag; tiles=history_tiles; routes=history_route;
     }
     ready = ready && serial != 0;
+    const bool scoped = ready && confirmed && !worlds.empty();
+    static const char* const dimensions[] = {"Overworld", "Nether", "End"};
+    const std::string world_key = worlds.empty() ? "" : worlds[selected_world];
+    const std::string label = world_key.empty() ? "Configure world_keys in manifest" : world_key + " / " + dimensions[dimension];
+    host.publish_i64(host.userdata,"world.ready",scoped);
+    host.publish_text(host.userdata,"world.key",world_key.c_str());
+    host.publish_i64(host.userdata,"world.dimension",dimension);
+    host.publish_text(host.userdata,"world.label",label.c_str());
+    host.publish_text(host.userdata,"world.diag",scoped ? "" : world_key.empty() ? "Configure world_keys in manifest" : "Choose world + dimension, then Confirm");
+    host.publish_text(host.userdata,"map.history_diag",history_status.c_str());
+    host.publish_i64(host.userdata,"map.history_tiles",tiles);
+    host.publish_i64(host.userdata,"map.history_routes",routes);
+    host.publish_i64(host.userdata,"map.routes",show_routes);
     host.publish_i64(host.userdata, "map.ready", ready ? 1 : 0);
     host.publish_text(host.userdata, "map.diag", !ready ? diag.c_str() : why.c_str());
     char key[48];
@@ -287,16 +368,24 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
 void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader) {
     const mc_reader::Layout* lay = reader.ActiveLayout();
     Place place;
+    const u64 player=reader.Player();
+    if (!player || (previous_player && previous_player!=player)) {
+        if (player_was_ready || (previous_player && previous_player!=player)) { confirmed=false; Invalidate(); }
+        player_was_ready=false;
+    }
+    if (player) previous_player=player;
     if (!lay || !lay->player_chunk_views) {
         diag = "no map for this game version";
         Publish(host, false, place);
         return;
     }
     if (!reader.Player() || !ReadPlace(host, reader, place)) {
+        if (player_was_ready) { confirmed=false; Invalidate(); player_was_ready=false; }
         diag = "waiting for the player";
         Publish(host, false, place);
         return;
     }
+    player_was_ready=true;
     if (colors_player != reader.Player()) {
         if (!ReadColors(host, reader)) {
             diag = "no block colours";
@@ -308,28 +397,25 @@ void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader) 
     }
     diag.clear();
 
-    // Ask for a new picture once the last one was drawn, on a timer or when the player walks into
-    // another block; at once after a zoom or a new world.
+    // Capture once a second, and at most six times a second while walking, independently of
+    // whether the map tab is visible. Requests may supersede a slow render.
     ++ticks_since_request;
     const int bx = static_cast<int>(std::floor(place.x)), bz = static_cast<int>(std::floor(place.z));
     const bool moved = bx != last_block_x || bz != last_block_z;
-    bool drawn;
-    {
-        std::lock_guard lock{mutex};
-        drawn = pictures[0].serial == serial;
-    }
-    if (want_picture || (drawn && (ticks_since_request >= RefreshTicks ||
-                                   (moved && ticks_since_request >= MinTicks)))) {
-        Request next{serial + 1, bx - view / 2, bz - view / 2, view, reader.Player(), lay, colors};
+    if (want_picture || ticks_since_request >= RefreshTicks || (moved && ticks_since_request >= MinTicks)) {
+        Request next;
+        next.serial=++serial; next.origin_x=bx-view/2; next.origin_z=bz-view/2; next.view=view;
+        next.player=reader.Player(); next.layout=lay; next.colors=colors;
+        next.scoped=confirmed && !worlds.empty();
+        if (next.scoped) next.world=worlds[selected_world];
+        next.dimension=dimension; next.player_x=bx; next.player_z=bz;
         {
             std::lock_guard lock{mutex};
-            pending = next;
+            next.route_start=route_start; next.generation=generation; pending=next; worker_host=host;
+            if (!worker.joinable()) worker=std::thread{&Map::Worker,this};
+            wake.notify_one();
         }
-        serial = next.serial;
-        last_block_x = bx;
-        last_block_z = bz;
-        ticks_since_request = 0;
-        want_picture = false;
+        last_block_x=bx; last_block_z=bz; ticks_since_request=0; want_picture=false;
     }
     Publish(host, true, place);
 }
@@ -337,6 +423,18 @@ void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader) 
 bool Map::OnAction(const char* action, s64) {
     if (!action)
         return false;
+    if (std::strcmp(action,"world_next")==0) {
+        if (worlds.size()<2) return false;
+        selected_world=(selected_world+1)%worlds.size(); confirmed=false; Invalidate(); return true;
+    }
+    if (std::strcmp(action,"world_dimension")==0) {
+        dimension=(dimension+1)%3; confirmed=false; Invalidate(); return true;
+    }
+    if (std::strcmp(action,"world_confirm")==0) {
+        if (worlds.empty() || !player_was_ready) return false;
+        confirmed=true; Invalidate(); return true;
+    }
+    if (std::strcmp(action,"map_routes")==0) { std::lock_guard lock{mutex}; show_routes=!show_routes; want_picture=true; return true; }
     const bool in = std::strcmp(action, "map_zoom_in") == 0;
     if (!in && std::strcmp(action, "map_zoom_out") != 0)
         return false;
@@ -347,48 +445,70 @@ bool Map::OnAction(const char* action, s64) {
         view = *++it;
     else
         return false; // already at the end: refuse, so the button gives the refused haptic
-    want_picture = true;
+    Invalidate();
     return true;
 }
 
-std::optional<mc_assets::Image> Map::Load(const EdenDsmodHostApi& host, std::string_view key) {
-    if (!key.starts_with("mapview/"))
-        return std::nullopt;
-    key.remove_prefix(8);
-    u64 wanted{};
-    if (std::from_chars(key.data(), key.data() + key.size(), wanted).ec != std::errc{})
-        return std::nullopt;
-    Request request;
+std::optional<mc_assets::Image> Map::Load(const EdenDsmodHostApi&, std::string_view key) {
+    if (!key.starts_with("mapview/")) return std::nullopt;
+    key.remove_prefix(8); u64 wanted{};
+    const auto result=std::from_chars(key.data(),key.data()+key.size(),wanted);
+    if (result.ec!=std::errc{} || result.ptr!=key.data()+key.size() || !wanted) return std::nullopt;
+    std::lock_guard lock{mutex};
+    for (const Picture& p:pictures) if (p.serial==wanted && !p.image.rgba.empty()) return p.image;
+    return std::nullopt; // the host retries when the worker completes
+}
+bool Map::DrawRequest(const EdenDsmodHostApi& host,const Request& request) {
+    mc_assets::Image live;
+    std::string why;
+    const auto t0=std::chrono::steady_clock::now();
+    const bool ok=Render(host,request,live,why);
+    bool draw_routes{};
     {
         std::lock_guard lock{mutex};
-        for (const Picture& p : pictures)
-            if (p.serial == wanted && !p.image.rgba.empty())
-                return p.image;
-        if (pending.serial != wanted)
-            return std::nullopt; // superseded before it was drawn
-        request = pending;
+        if (request.generation!=generation || pictures[0].serial>request.serial || stopping) return false;
+        draw_routes=show_routes;
     }
-    Picture picture{request.serial, request.origin_x, request.origin_z, {}};
-    std::string why;
-    const auto t0 = std::chrono::steady_clock::now();
-    const bool ok = Render(host, request, picture.image, why);
-    const auto us = std::chrono::duration_cast<std::chrono::microseconds>(
-                        std::chrono::steady_clock::now() - t0)
-                        .count();
+    // Worker owns all stores. Filesystem work is outside the tick mutex. Each store keeps its
+    // full identity even when the selected scene changes, and results are rechecked at commit.
+    if (request.scoped) {
+        if (history && !history->IsScope(request.world,request.dimension)) history->Save();
+        const std::pair scope{request.world,request.dimension};
+        auto found=histories.find(scope);
+        if (found==histories.end()) {
+            if (histories.size()==4) {
+                // Disk-backed scopes reload on demand. Session-only scopes have a bounded cache.
+                auto old=histories.begin(); old->second->Save();
+                if (history==old->second.get()) history=nullptr;
+                histories.erase(old);
+            }
+            auto store=std::make_unique<mc_exploration::History>(request.world,request.dimension,data_directory);
+            store->Load();
+            found=histories.emplace(scope,std::move(store)).first;
+        }
+        history=found->second.get();
+        if (ok) history->Merge(request.origin_x,request.origin_z,live);
+        history->Visit(request.player_x,request.player_z,request.route_start);
+        const auto now=std::chrono::steady_clock::now();
+        if (now-last_save>=std::chrono::seconds(5)) { history->Save(); last_save=now; }
+        live=history->Draw(request.origin_x,request.origin_z,request.view,draw_routes);
+    }
     std::lock_guard lock{mutex};
-    render_us = us;
-    render_diag = why;
-    if (!ok) {
-        // Counts as drawn, so the tick thread asks again on its timer; the old picture stays.
-        picture.image = pictures[0].image;
-        picture.origin_x = pictures[0].origin_x;
-        picture.origin_z = pictures[0].origin_z;
-        if (picture.image.rgba.empty())
-            return std::nullopt;
+    if (request.generation!=generation || pictures[0].serial>request.serial || stopping) return false;
+    if (request.scoped) {
+        route_start=false;
+        history_diag=history->Diagnostic(); history_tiles=history->TileCount(); history_route=history->RouteCount();
     }
-    pictures[1] = std::move(pictures[0]);
-    pictures[0] = std::move(picture);
-    return pictures[0].image;
+    Picture picture{request.serial,request.origin_x,request.origin_z,std::move(live)};
+    if (picture.image.rgba.empty()) {
+        picture.image.width=picture.image.height=request.view;
+        picture.image.rgba.resize(static_cast<std::size_t>(request.view)*request.view*4);
+    }
+    render_us=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-t0).count();
+    render_diag=why;
+    pictures[1]=std::move(pictures[0]); pictures[0]=std::move(picture);
+    wake.notify_all();
+    return true;
 }
 
 } // namespace mc_map
