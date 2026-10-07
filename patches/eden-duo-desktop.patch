@@ -1,0 +1,224 @@
+diff --git a/src/core/hle/kernel/k_page_table_base.cpp b/src/core/hle/kernel/k_page_table_base.cpp
+index a727355..170ac9c 100644
+--- a/src/core/hle/kernel/k_page_table_base.cpp
++++ b/src/core/hle/kernel/k_page_table_base.cpp
+@@ -3650,9 +3650,13 @@ Result KPageTableBase::UnlockForIpcUserBuffer(KProcessAddress address, size_t si
+ 
+ Result KPageTableBase::LockForTransferMemory(KPageGroup* out, KProcessAddress address, size_t size,
+                                              KMemoryPermission perm) {
++    // DSMod fork (desktop research build): ignore a stale DeviceShared attribute. The HLE nvmap
++    // leaves it behind on memory the game later reuses for a transfer memory (Minecraft's
++    // nn::ec initialisation), and the game aborts on the resulting InvalidCurrentMemory.
+     R_RETURN(this->LockMemoryAndOpen(out, nullptr, address, size, KMemoryState::FlagCanTransfer,
+                                      KMemoryState::FlagCanTransfer, KMemoryPermission::All,
+-                                     KMemoryPermission::UserReadWrite, KMemoryAttribute::All,
++                                     KMemoryPermission::UserReadWrite,
++                                     KMemoryAttribute::All & ~KMemoryAttribute::DeviceShared,
+                                      KMemoryAttribute::None, perm, KMemoryAttribute::Locked));
+ }
+ 
+@@ -3660,7 +3664,7 @@ Result KPageTableBase::UnlockForTransferMemory(KProcessAddress address, size_t s
+                                                const KPageGroup& pg) {
+     R_RETURN(this->UnlockMemory(address, size, KMemoryState::FlagCanTransfer,
+                                 KMemoryState::FlagCanTransfer, KMemoryPermission::None,
+-                                KMemoryPermission::None, KMemoryAttribute::All,
++                                KMemoryPermission::None, KMemoryAttribute::All & ~KMemoryAttribute::DeviceShared, // DSMod fork: see LockForTransferMemory
+                                 KMemoryAttribute::Locked, KMemoryPermission::UserReadWrite,
+                                 KMemoryAttribute::Locked, std::addressof(pg)));
+ }
+@@ -5442,12 +5446,12 @@ Result KPageTableBase::UnmapPhysicalMemory(KProcessAddress address, size_t size)
+ 
+             // Verify the memory's state.
+             const bool is_normal = info.GetState() == KMemoryState::Normal &&
+-                                   info.GetAttribute() == KMemoryAttribute::None;
++                                   (info.GetAttribute() & ~KMemoryAttribute::DeviceShared) == KMemoryAttribute::None /* DSMod fork: stale nvmap DeviceShared tolerated */;
+             const bool is_free = info.GetState() == KMemoryState::Free;
+             R_UNLESS(is_normal || is_free, ResultInvalidCurrentMemory);
+ 
+             if (is_normal) {
+-                R_UNLESS(info.GetAttribute() == KMemoryAttribute::None, ResultInvalidCurrentMemory);
++                R_UNLESS((info.GetAttribute() & ~KMemoryAttribute::DeviceShared) == KMemoryAttribute::None /* DSMod fork: stale nvmap DeviceShared tolerated */, ResultInvalidCurrentMemory);
+ 
+                 if (map_start_address == 0) {
+                     map_start_address = cur_address;
+diff --git a/src/core/hle/kernel/svc/svc_physical_memory.cpp b/src/core/hle/kernel/svc/svc_physical_memory.cpp
+index 48915b2..b0114a4 100644
+--- a/src/core/hle/kernel/svc/svc_physical_memory.cpp
++++ b/src/core/hle/kernel/svc/svc_physical_memory.cpp
+@@ -29,6 +29,29 @@ Result SetHeapSize(Core::System& system, u64* out_address, u64 size) {
+     R_SUCCEED();
+ }
+ 
++
++// DSMod fork: on failure, explain which memory blocks in the range blocked the operation.
++static void LogPhysicalMemoryFailure(const char* what, KProcessPageTable& page_table, u64 addr,
++                                     u64 size, Result result) {
++    LOG_WARNING(Kernel_SVC, "{} failed: result=0x{:08X} addr={:#016x} size={:#x}", what,
++                result.raw, addr, size);
++    u64 cur = addr;
++    for (int guard = 0; guard < 64 && cur < addr + size; ++guard) {
++        KMemoryInfo info{};
++        Svc::PageInfo page_info{};
++        if (page_table.QueryInfo(std::addressof(info), std::addressof(page_info), cur).IsError())
++            break;
++        LOG_WARNING(Kernel_SVC, "  block {:#016x}+{:#x}: state={:#x} perm={:#x} attr={:#x}",
++                    info.GetAddress(), info.GetSize(),
++                    static_cast<u32>(info.GetState()), static_cast<u32>(info.GetPermission()),
++                    static_cast<u32>(info.GetAttribute()));
++        const u64 next = info.GetAddress() + info.GetSize();
++        if (next <= cur)
++            break;
++        cur = next;
++    }
++}
++
+ /// Maps memory at a desired address
+ Result MapPhysicalMemory(Core::System& system, u64 addr, u64 size) {
+     LOG_DEBUG(Kernel_SVC, "called, addr={:#016x}, size={:#x}", addr, size);
+@@ -75,7 +98,10 @@ Result MapPhysicalMemory(Core::System& system, u64 addr, u64 size) {
+         R_THROW(ResultInvalidMemoryRegion);
+     }
+ 
+-    R_RETURN(page_table.MapPhysicalMemory(addr, size));
++    const Result map_result = page_table.MapPhysicalMemory(addr, size);
++    if (map_result.IsError())
++        LogPhysicalMemoryFailure("MapPhysicalMemory", page_table, addr, size, map_result);
++    R_RETURN(map_result);
+ }
+ 
+ /// Unmaps memory previously mapped via MapPhysicalMemory
+@@ -124,7 +150,10 @@ Result UnmapPhysicalMemory(Core::System& system, u64 addr, u64 size) {
+         R_THROW(ResultInvalidMemoryRegion);
+     }
+ 
+-    R_RETURN(page_table.UnmapPhysicalMemory(addr, size));
++    const Result unmap_result = page_table.UnmapPhysicalMemory(addr, size);
++    if (unmap_result.IsError())
++        LogPhysicalMemoryFailure("UnmapPhysicalMemory", page_table, addr, size, unmap_result);
++    R_RETURN(unmap_result);
+ }
+ 
+ Result MapPhysicalMemoryUnsafe(Core::System& system, uint64_t address, uint64_t size) {
+diff --git a/src/core/hle/kernel/svc/svc_transfer_memory.cpp b/src/core/hle/kernel/svc/svc_transfer_memory.cpp
+index e539eee..9ce045e 100644
+--- a/src/core/hle/kernel/svc/svc_transfer_memory.cpp
++++ b/src/core/hle/kernel/svc/svc_transfer_memory.cpp
+@@ -62,7 +62,27 @@ Result CreateTransferMemory(Core::System& system, Handle* out, u64 address, u64
+     R_UNLESS(process.GetPageTable().Contains(address, size), ResultInvalidCurrentMemory);
+ 
+     // Initialize the transfer memory.
+-    R_TRY(trmem->Initialize(system.Kernel(), address, size, map_perm));
++    // DSMod fork: on failure, explain which memory blocks in the range blocked the operation.
++    if (const Result init_result = trmem->Initialize(system.Kernel(), address, size, map_perm);
++        init_result.IsError()) {
++        LOG_WARNING(Kernel_SVC, "CreateTransferMemory failed: result=0x{:08X} addr={:#016x} size={:#x} perm={}",
++                    init_result.raw, address, size, static_cast<u32>(map_perm));
++        u64 cur = address;
++        for (int guard = 0; guard < 64 && cur < address + size; ++guard) {
++            KMemoryInfo info{};
++            PageInfo page_info{};
++            if (process.GetPageTable().QueryInfo(std::addressof(info), std::addressof(page_info), cur).IsError())
++                break;
++            LOG_WARNING(Kernel_SVC, "  block {:#016x}+{:#x}: state={:#x} perm={:#x} attr={:#x}",
++                        info.GetAddress(), info.GetSize(), static_cast<u32>(info.GetState()),
++                        static_cast<u32>(info.GetPermission()), static_cast<u32>(info.GetAttribute()));
++            const u64 next = info.GetAddress() + info.GetSize();
++            if (next <= cur)
++                break;
++            cur = next;
++        }
++        R_THROW(init_result);
++    }
+ 
+     // Commit the reservation.
+     trmem_reservation.Commit();
+diff --git a/src/core/hle/service/am/service/application_functions.cpp b/src/core/hle/service/am/service/application_functions.cpp
+index 25a6662..ec31efa 100644
+--- a/src/core/hle/service/am/service/application_functions.cpp
++++ b/src/core/hle/service/am/service/application_functions.cpp
+@@ -330,7 +330,10 @@ Result IApplicationFunctions::GetPseudoDeviceId(Out<Common::UUID> out_pseudo_dev
+     const auto res = FileSys::PatchManager::GetMetadataFromBaseOrUpdate(system, m_applet->program_id);
+     u8 hash[EVP_MAX_MD_SIZE];
+     unsigned int hash_len = 0;
+-    auto const seed = res.first->raw.seed_for_pseudo_device_id;
++    // DSMod fork: a title whose control data cannot be read (no update installed, control NCA
++    // not found) must not crash the host; hash a zero seed instead.
++    const auto seed = res.first != nullptr ? res.first->raw.seed_for_pseudo_device_id
++                                           : decltype(res.first->raw.seed_for_pseudo_device_id){};
+     EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+     auto const algorithm = EVP_sha1();
+     EVP_DigestInit_ex(ctx, algorithm, nullptr);
+diff --git a/src/core/hle/service/sockets/bsd.cpp b/src/core/hle/service/sockets/bsd.cpp
+index 1a59444..d7959b7 100644
+--- a/src/core/hle/service/sockets/bsd.cpp
++++ b/src/core/hle/service/sockets/bsd.cpp
+@@ -531,6 +531,14 @@ std::pair<s32, Errno> BSD::SocketImpl(Domain domain, Type type, Protocol protoco
+         }
+     }
+ 
++    // DSMod fork: the host network layer only speaks IPv4. Refuse an IPv6 socket up front instead
++    // of handing the guest a descriptor whose host socket failed to open (Minecraft then dies on
++    // the first EBADF). A plain EAFNOSUPPORT is what a Switch without IPv6 would report too.
++    if (domain == Domain::INET6) {
++        LOG_WARNING(Service, "IPv6 socket requested; refusing with EAFNOSUPPORT");
++        return {-1, Errno::AFNOSUPPORT};
++    }
++
+     [[maybe_unused]] const bool unk_flag = (static_cast<u32>(type) & 0x20000000) != 0;
+     UNIMPLEMENTED_IF_MSG(unk_flag, "Unknown flag in type");
+     type = static_cast<Type>(static_cast<u32>(type) & ~0x20000000);
+diff --git a/src/core/hle/service/sockets/sockets.h b/src/core/hle/service/sockets/sockets.h
+index 2837ce7..a4c2bef 100644
+--- a/src/core/hle/service/sockets/sockets.h
++++ b/src/core/hle/service/sockets/sockets.h
+@@ -23,6 +23,7 @@ enum class Errno : u32 {
+     MFILE = 24,
+     PIPE = 32,
+     MSGSIZE = 90,
++    AFNOSUPPORT = 97,
+     CONNABORTED = 103,
+     CONNRESET = 104,
+     NOTCONN = 107,
+@@ -54,6 +55,7 @@ enum class GetAddrInfoError : s32 {
+ enum class Domain : u32 {
+     Unspecified = 0,
+     INET = 2,
++    INET6 = 28, // Horizon AF_INET6; not supported by the host layer, refused in BSD::SocketImpl
+ };
+ 
+ enum class Type : u32 {
+diff --git a/src/yuzu_cmd/yuzu.cpp b/src/yuzu_cmd/yuzu.cpp
+index 7816667..cb5e8dc 100644
+--- a/src/yuzu_cmd/yuzu.cpp
++++ b/src/yuzu_cmd/yuzu.cpp
+@@ -748,12 +748,16 @@ static void ServiceButtonRequests(SdlState* state) {
+         }
+ 
+         // "A" presses one button; "DRIGHT+A" holds several at once, which platforming needs.
++        // A "P1:" prefix presses player 1 only: a game that lets a second pad join (Minecraft's
++        // split screen on Plus) would otherwise see the handheld port as another player.
+         g_button_keys.clear();
+         g_button_all.clear();
+         auto* const keyboard = state->input_subsystem.GetKeyboard();
+-        for (size_t start = 0; start <= step.name.size();) {
+-            const size_t plus = step.name.find('+', start);
+-            const std::string name = step.name.substr(
++        const bool player1_only = step.name.starts_with("P1:");
++        const std::string buttons = player1_only ? step.name.substr(3) : step.name;
++        for (size_t start = 0; start <= buttons.size();) {
++            const size_t plus = buttons.find('+', start);
++            const std::string name = buttons.substr(
+                 start, plus == std::string::npos ? std::string::npos : plus - start);
+             if (!name.empty()) {
+                 const auto button = ButtonFromName(name);
+@@ -761,7 +765,9 @@ static void ServiceButtonRequests(SdlState* state) {
+                 // Both the handheld port and player 1, since which one the game reads depends
+                 // on setup.
+                 pad->SetButtonState(0, button, true);
+-                pad->SetButtonState(8, button, true);
++                if (!player1_only) {
++                    pad->SetButtonState(8, button, true);
++                }
+                 // Also drive the configured player-1 binding: on desktop that is the keyboard,
+                 // which is the path the emulated controller actually reads from.
+                 if (const int key = KeyCodeForButton(name); key >= 0) {

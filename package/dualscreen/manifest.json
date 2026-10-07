@@ -1,0 +1,848 @@
+{
+ "format": 1,
+ "title_id": "0100D71004694000",
+ "name": "Minecraft inventory",
+ "min_runtime": 17,
+ "_about": "Minecraft (Bedrock Edition, Switch) second-screen companion with two tabs. Inventory: the player's armor, health, air and hunger as the game's HUD draws them, above the 9x4 inventory grid (27 main slots above the 9 hotbar slots), item icons decoded by the native module from the player's own romfs resource packs, stack counts, the selected hotbar slot and its name as the game shows it, in the game's own font. Map: the chunks the game holds around the player, drawn by the module the way the game's map item draws them (each block's own map colour, shaded by height and water depth), on the game's map paper with its player marker, plus the player's coordinates and heading. The package ships no game assets.",
+ "canvas_w": 1240,
+ "canvas_h": 1080,
+ "background": "#FF1E1E1E",
+ "font": "file:mc_font.txt",
+ "font_atlas": "module:mc:font/default8",
+ "requires_module": true,
+ "flags": {},
+ "derived": [
+  {
+   "name": "ui.show_inventory",
+   "all_nonzero": [
+    "module_ready",
+    "inv.ready"
+   ]
+  },
+  {
+   "name": "ui.sel_x",
+   "expr": "68 + inv.selected * 124 - 6"
+  },
+  {
+   "name": "ui.map_mx",
+   "expr": "map.px * 768 / max(map.view, 1)"
+  },
+  {
+   "name": "ui.map_my",
+   "expr": "map.pz * 768 / max(map.view, 1)"
+  }
+ ],
+ "page_binds": [
+  {
+   "point": "ui.show_inventory",
+   "equals": 1,
+   "when_equal": {
+    "page": "inventory",
+    "transition": "fade",
+    "duration_ms": 200
+   },
+   "when_not_equal": {
+    "page": "standby",
+    "transition": "fade",
+    "duration_ms": 200
+   }
+  }
+ ],
+ "pages": [
+  {
+   "id": "standby",
+   "title": "Standby",
+   "widgets": [
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      1240,
+      1080
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#00000000"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      400,
+      0,
+      0
+     ],
+     "text": "Minecraft Inventory",
+     "text_scale": 8,
+     "align": "center",
+     "color": "#FFE6ECF2"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      500,
+      0,
+      0
+     ],
+     "text": "Waiting for a world",
+     "text_scale": 4,
+     "align": "center",
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      600,
+      0,
+      0
+     ],
+     "bind_text": "inv.diag",
+     "text_scale": 2,
+     "align": "center",
+     "color": "#FF707880"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      650,
+      0,
+      0
+     ],
+     "bind_text": "module_error_message",
+     "text_scale": 2,
+     "align": "center",
+     "color": "#FFB05050"
+    }
+   ]
+  },
+  {
+   "id": "inventory",
+   "title": "Inventory",
+   "widgets": [
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      1240,
+      1080
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#00000000"
+    },
+    {
+     "_note": "tab bar: the page's own tab is lit",
+     "type": "button",
+     "rect": [
+      384,
+      14,
+      228,
+      72
+     ],
+     "text": "Inventory",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_inventory",
+     "bg": "#FF4A4A4A",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      628,
+      14,
+      228,
+      72
+     ],
+     "text": "Map",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_map",
+     "bg": "#FF262626",
+     "color": "#FF8A8A8A"
+    },
+    {
+     "_note": "swipe left for the map",
+     "type": "rect",
+     "rect": [
+      0,
+      100,
+      1240,
+      980
+     ],
+     "bg": "#00000000",
+     "color": "#00000000",
+     "frame": 0,
+     "on_swipe_left": "page_map"
+    },
+    {
+     "_note": "armor points, as the HUD row above the hearts",
+     "type": "image",
+     "rect": [
+      68,
+      112,
+      54,
+      54
+     ],
+     "color": "#FFFFFFFF",
+     "bind": "hud.armor{i}",
+     "src": "module:mc:ui/armor_empty",
+     "src_names": [
+      "module:mc:ui/armor_empty",
+      "module:mc:ui/armor_half",
+      "module:mc:ui/armor_full"
+     ],
+     "need_bind": "player.armor_ok",
+     "repeat": 10,
+     "repeat_dx": 48
+    },
+    {
+     "_note": "air bubbles above the hunger row; they pop from the left",
+     "type": "image",
+     "rect": [
+      686,
+      112,
+      54,
+      54
+     ],
+     "color": "#FFFFFFFF",
+     "bind": "hud.bubble{i}",
+     "src": "module:mc:ui/bubble_pop",
+     "src_names": [
+      "module:mc:ui/bubble_pop",
+      "module:mc:ui/bubble_pop",
+      "module:mc:ui/bubble"
+     ],
+     "hide_bind": "hud.bubble{i}",
+     "keep_min": 1,
+     "need_bind": "player.air_ok",
+     "repeat": 10,
+     "repeat_dx": 48
+    },
+    {
+     "_note": "health: ten hearts, half hearts included",
+     "type": "image",
+     "rect": [
+      68,
+      172,
+      54,
+      54
+     ],
+     "color": "#FFFFFFFF",
+     "src": "module:mc:ui/heart_background",
+     "need_bind": "player.health_ok",
+     "repeat": 10,
+     "repeat_dx": 48
+    },
+    {
+     "type": "image",
+     "rect": [
+      68,
+      172,
+      54,
+      54
+     ],
+     "color": "#FFFFFFFF",
+     "bind": "hud.heart{i}",
+     "src": "module:mc:ui/heart_half",
+     "src_names": [
+      "module:mc:ui/heart_half",
+      "module:mc:ui/heart_half",
+      "module:mc:ui/heart"
+     ],
+     "hide_bind": "hud.heart{i}",
+     "keep_min": 1,
+     "need_bind": "player.health_ok",
+     "repeat": 10,
+     "repeat_dx": 48
+    },
+    {
+     "_note": "hunger: ten shanks that empty from the left",
+     "type": "image",
+     "rect": [
+      686,
+      172,
+      54,
+      54
+     ],
+     "color": "#FFFFFFFF",
+     "src": "module:mc:ui/hunger_background",
+     "need_bind": "player.hunger_ok",
+     "repeat": 10,
+     "repeat_dx": 48
+    },
+    {
+     "type": "image",
+     "rect": [
+      686,
+      172,
+      54,
+      54
+     ],
+     "color": "#FFFFFFFF",
+     "bind": "hud.hunger{i}",
+     "src": "module:mc:ui/hunger_half",
+     "src_names": [
+      "module:mc:ui/hunger_half",
+      "module:mc:ui/hunger_half",
+      "module:mc:ui/hunger_full"
+     ],
+     "hide_bind": "hud.hunger{i}",
+     "keep_min": 1,
+     "need_bind": "player.hunger_ok",
+     "repeat": 10,
+     "repeat_dx": 48
+    },
+    {
+     "_note": "main inventory, slots 9..35, three rows of nine",
+     "type": "rect",
+     "rect": [
+      68,
+      262,
+      112,
+      112
+     ],
+     "bg": "#FF2C2C2C",
+     "color": "#FF4A4A4A",
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124
+    },
+    {
+     "type": "image",
+     "rect": [
+      80,
+      274,
+      88,
+      88
+     ],
+     "color": "#FFFFFFFF",
+     "src_bind": "inv.slot{i+9}.icon",
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124
+    },
+    {
+     "_note": "drop shadow, one font pixel down and right, as the game draws text",
+     "type": "value",
+     "rect": [
+      179,
+      343,
+      0,
+      0
+     ],
+     "bind": "inv.slot{i+9}.count",
+     "text_scale": 5,
+     "align": "right",
+     "color": "#FF3F3F3F",
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124,
+     "hide_bind": "inv.slot{i+9}.count",
+     "keep_min": 2
+    },
+    {
+     "type": "value",
+     "rect": [
+      174,
+      338,
+      0,
+      0
+     ],
+     "bind": "inv.slot{i+9}.count",
+     "text_scale": 5,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "repeat": 27,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "repeat_row_dy": 124,
+     "hide_bind": "inv.slot{i+9}.count",
+     "keep_min": 2
+    },
+    {
+     "_note": "hotbar, slots 0..8",
+     "type": "rect",
+     "rect": [
+      68,
+      650,
+      112,
+      112
+     ],
+     "bg": "#FF2C2C2C",
+     "color": "#FF4A4A4A",
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124
+    },
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      644,
+      124,
+      124
+     ],
+     "bg": "#00000000",
+     "color": "#FFFFFFFF",
+     "frame": 4,
+     "x_bind": "ui.sel_x"
+    },
+    {
+     "type": "image",
+     "rect": [
+      80,
+      662,
+      88,
+      88
+     ],
+     "color": "#FFFFFFFF",
+     "src_bind": "inv.slot{i}.icon",
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124
+    },
+    {
+     "_note": "drop shadow, one font pixel down and right, as the game draws text",
+     "type": "value",
+     "rect": [
+      179,
+      731,
+      0,
+      0
+     ],
+     "bind": "inv.slot{i}.count",
+     "text_scale": 5,
+     "align": "right",
+     "color": "#FF3F3F3F",
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "hide_bind": "inv.slot{i}.count",
+     "keep_min": 2
+    },
+    {
+     "type": "value",
+     "rect": [
+      174,
+      726,
+      0,
+      0
+     ],
+     "bind": "inv.slot{i}.count",
+     "text_scale": 5,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "repeat": 9,
+     "repeat_cols": 9,
+     "repeat_dx": 124,
+     "hide_bind": "inv.slot{i}.count",
+     "keep_min": 2
+    },
+    {
+     "_note": "the selected item's name, as the game's hotbar shows it (drop shadow first, as the game draws text)",
+     "type": "label",
+     "rect": [
+      624,
+      812,
+      0,
+      0
+     ],
+     "bind_text": "inv.slot_sel_name",
+     "text_scale": 4,
+     "align": "center",
+     "color": "#FF3F3F3F"
+    },
+    {
+     "type": "label",
+     "rect": [
+      620,
+      808,
+      0,
+      0
+     ],
+     "bind_text": "inv.slot_sel_name",
+     "text_scale": 4,
+     "align": "center",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1220,
+      1040,
+      0,
+      0
+     ],
+     "bind": "mc.sample_us",
+     "suffix": " us",
+     "text_scale": 2,
+     "align": "right",
+     "color": "#FF505860"
+    }
+   ]
+  },
+  {
+   "id": "map",
+   "title": "Map",
+   "widgets": [
+    {
+     "type": "rect",
+     "rect": [
+      0,
+      0,
+      1240,
+      1080
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#00000000"
+    },
+    {
+     "_note": "tab bar: the page's own tab is lit",
+     "type": "button",
+     "rect": [
+      384,
+      14,
+      228,
+      72
+     ],
+     "text": "Inventory",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_inventory",
+     "bg": "#FF262626",
+     "color": "#FF8A8A8A"
+    },
+    {
+     "type": "button",
+     "rect": [
+      628,
+      14,
+      228,
+      72
+     ],
+     "text": "Map",
+     "text_scale": 4,
+     "align": "center",
+     "border": 4,
+     "on_tap": "page_map",
+     "bg": "#FF4A4A4A",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "_note": "swipe right for the inventory",
+     "type": "rect",
+     "rect": [
+      0,
+      100,
+      1240,
+      980
+     ],
+     "bg": "#00000000",
+     "color": "#00000000",
+     "frame": 0,
+     "on_swipe_right": "page_inventory"
+    },
+    {
+     "_note": "the game's map paper; unloaded ground stays paper",
+     "type": "image",
+     "rect": [
+      24,
+      104,
+      864,
+      864
+     ],
+     "color": "#FFFFFFFF",
+     "src": "module:mc:map/map_background"
+    },
+    {
+     "_note": "the previous picture underneath, so the map never blinks while the next one loads",
+     "type": "image",
+     "rect": [
+      72,
+      152,
+      768,
+      768
+     ],
+     "color": "#FFFFFFFF",
+     "src_bind": "map.image_prev",
+     "need_bind": "map.ready"
+    },
+    {
+     "_note": "one pixel per block, north up",
+     "type": "image",
+     "rect": [
+      72,
+      152,
+      768,
+      768
+     ],
+     "color": "#FFFFFFFF",
+     "src_bind": "map.image",
+     "need_bind": "map.ready"
+    },
+    {
+     "_note": "the game's player marker, turned to the player's heading",
+     "type": "image",
+     "rect": [
+      52,
+      132,
+      40,
+      40
+     ],
+     "color": "#FFFFFFFF",
+     "src": "module:mc:mapicon/0",
+     "x_bind": "ui.map_mx",
+     "y_bind": "ui.map_my",
+     "rotate_bind": "map.heading",
+     "need_bind": "map.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      456,
+      500,
+      0,
+      0
+     ],
+     "text": "No map yet",
+     "text_scale": 4,
+     "align": "center",
+     "color": "#FF5A4A32",
+     "need_bind": "!map.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      456,
+      560,
+      0,
+      0
+     ],
+     "bind_text": "map.diag",
+     "text_scale": 2,
+     "align": "center",
+     "color": "#FF5A4A32",
+     "need_bind": "!map.ready"
+    },
+    {
+     "_note": "coordinates of the block the player stands in",
+     "type": "label",
+     "rect": [
+      924,
+      160,
+      0,
+      0
+     ],
+     "text": "X",
+     "text_scale": 4,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1210,
+      156,
+      0,
+      0
+     ],
+     "bind": "map.x",
+     "text_scale": 5,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "map.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      924,
+      236,
+      0,
+      0
+     ],
+     "text": "Y",
+     "text_scale": 4,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1210,
+      232,
+      0,
+      0
+     ],
+     "bind": "map.y",
+     "text_scale": 5,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "map.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      924,
+      312,
+      0,
+      0
+     ],
+     "text": "Z",
+     "text_scale": 4,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1210,
+      308,
+      0,
+      0
+     ],
+     "bind": "map.z",
+     "text_scale": 5,
+     "align": "right",
+     "color": "#FFFFFFFF",
+     "need_bind": "map.ready"
+    },
+    {
+     "type": "label",
+     "rect": [
+      924,
+      420,
+      0,
+      0
+     ],
+     "text": "Facing",
+     "text_scale": 3,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "label",
+     "rect": [
+      924,
+      460,
+      0,
+      0
+     ],
+     "bind_text": "map.facing",
+     "text_scale": 4,
+     "color": "#FFFFFFFF",
+     "need_bind": "map.ready"
+    },
+    {
+     "_note": "zoom: 64, 128 or 256 blocks across",
+     "type": "label",
+     "rect": [
+      924,
+      700,
+      0,
+      0
+     ],
+     "text": "Zoom",
+     "text_scale": 3,
+     "color": "#FF9AA4B0"
+    },
+    {
+     "type": "button",
+     "rect": [
+      924,
+      744,
+      136,
+      100
+     ],
+     "text": "+",
+     "text_scale": 6,
+     "align": "center",
+     "border": 4,
+     "on_tap": "map_zoom_in",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1074,
+      744,
+      136,
+      100
+     ],
+     "text": "-",
+     "text_scale": 6,
+     "align": "center",
+     "border": 4,
+     "on_tap": "map_zoom_out",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1067,
+      868,
+      0,
+      0
+     ],
+     "bind": "map.view",
+     "suffix": " blocks",
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FF9AA4B0",
+     "need_bind": "map.ready"
+    },
+    {
+     "type": "value",
+     "rect": [
+      1220,
+      1040,
+      0,
+      0
+     ],
+     "bind": "map.render_us",
+     "suffix": " us",
+     "text_scale": 2,
+     "align": "right",
+     "color": "#FF505860"
+    }
+   ]
+  }
+ ],
+ "actions": {
+  "page_inventory": {
+   "kind": "page",
+   "page": "inventory",
+   "transition": "fade",
+   "duration_ms": 200
+  },
+  "page_standby": {
+   "kind": "page",
+   "page": "standby",
+   "transition": "fade",
+   "duration_ms": 200
+  },
+  "page_map": {
+   "kind": "page",
+   "page": "map",
+   "transition": "fade",
+   "duration_ms": 200
+  },
+  "map_zoom_in": {
+   "kind": "module",
+   "action": "map_zoom_in",
+   "haptic": "click"
+  },
+  "map_zoom_out": {
+   "kind": "module",
+   "action": "map_zoom_out",
+   "haptic": "click"
+  }
+ }
+}
