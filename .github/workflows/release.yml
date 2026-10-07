@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      release-tag: ${{ github.ref_name }}
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: minecraft-companion
+          path: dist
+      - name: Publish verified downloads
+        run: |
+          cd dist
+          sha256sum --check SHA256SUMS
+          cd ..
+          notes="docs/releases/$RELEASE_TAG.md"
+          if [ ! -f "$notes" ]; then
+            echo "Missing release notes: $notes" >&2
+            exit 1
+          fi
+          # A rerun may complete an interrupted draft, but never replace a published release.
+          if gh release view "$RELEASE_TAG" --json isDraft > release-state.json 2>/dev/null; then
+            python3 -c 'import json; assert json.load(open("release-state.json"))["isDraft"], "Release is already published"'
+            gh release upload "$RELEASE_TAG" dist/0100D71004694000.dsmod.zip dist/SHA256SUMS --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/0100D71004694000.dsmod.zip dist/SHA256SUMS \
+              --verify-tag --draft --title "Minecraft Companion $RELEASE_TAG" --notes-file "$notes"
+          fi
+          gh release edit "$RELEASE_TAG" --draft=false --latest --title "Minecraft Companion $RELEASE_TAG" --notes-file "$notes"

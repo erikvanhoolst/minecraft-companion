@@ -7,7 +7,7 @@ set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 [ -f "$ROOT/local.env" ] && . "$ROOT/local.env"
 TARGET="${1:-all}"
-VERSION="${MC_VERSION:-$(python3 -c "import json;print(json.load(open('$ROOT/package/package.json'))['version'])")}"
+VERSION="${MC_VERSION:-$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$ROOT/package/package.json")}"
 # Every game build the module's Layout table supports (mc_reader.cpp).
 BUILD_IDS="53E6D516A4DA5CD0C49FCE555994DA196B63E9C1000000000000000000000000 D8B7E605E809E80C76FA3BD670FAB5BA00000000000000000000000000000000"
 LINUX_SO="$ROOT/build/linux/stripped/0100D71004694000.so"

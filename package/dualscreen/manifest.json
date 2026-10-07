@@ -2,7 +2,7 @@
  "format": 1,
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
- "min_runtime": 17,
+ "min_runtime": 18,
  "_about": "Minecraft (Bedrock Edition, Switch) second-screen companion with two tabs. Inventory: the player's armor, health, air and hunger as the game's HUD draws them, above the 9x4 inventory grid (27 main slots above the 9 hotbar slots), item icons decoded by the native module from the player's own romfs resource packs, stack counts, the selected hotbar slot and its name as the game shows it, in the game's own font. Map: the chunks the game holds around the player, drawn by the module the way the game's map item draws them (each block's own map colour, shaded by height and water depth), on the game's map paper with its player marker, plus the player's coordinates and heading. The package ships no game assets.",
  "canvas_w": 1240,
  "canvas_h": 1080,

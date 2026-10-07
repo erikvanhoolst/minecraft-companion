@@ -282,8 +282,10 @@ def build_package(
             "name": package_name,
             "version": version,
         }
+        if min_runtime is None:
+            min_runtime = source_manifest.get("min_runtime")
         if min_runtime is not None:
-            if min_runtime < 1:
+            if type(min_runtime) is not int or min_runtime < 1:
                 raise PackageError("--min-runtime must be positive")
             package_manifest["min_runtime"] = min_runtime
         if source_manifest.get("requires_module", False):

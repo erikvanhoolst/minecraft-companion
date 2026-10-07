@@ -1,0 +1,67 @@
+name: Build package
+
+on:
+  workflow_call:
+    inputs:
+      release-tag:
+        description: Optional release tag; must match the package version
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Linux + Android package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NDK_VERSION: 28.2.13676358
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
+      RELEASE_TAG: ${{ inputs.release-tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Check release version
+        if: inputs.release-tag != ''
+        run: |
+          python3 - <<'PY'
+          import json, os, re
+          version = json.load(open('package/package.json'))['version']
+          tag = os.environ['RELEASE_TAG']
+          if tag != f'v{version}' or not re.fullmatch(r'v\d+\.\d+\.\d+', tag):
+              raise SystemExit('Release tag must match the package version (vMAJOR.MINOR.PATCH)')
+          PY
+      - name: Test package builder
+        run: python3 -m unittest discover -s tests -v
+      - name: Install build tools and Android NDK r28c
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y cmake ninja-build g++ binutils
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - name: Build Linux and Android modules and package
+        run: scripts/build.sh all
+      - name: Verify installable release and deterministic packaging
+        run: |
+          python3 scripts/verify_release.py dist/0100D71004694000.dsmod.zip --tag "$RELEASE_TAG"
+          cd dist
+          sha256sum 0100D71004694000.dsmod.zip > SHA256SUMS
+          cd ..
+          scripts/build.sh package
+          cd dist
+          sha256sum --check SHA256SUMS
+      - name: Upload verified package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: minecraft-companion
+          path: |
+            dist/0100D71004694000.dsmod.zip
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14

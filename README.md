@@ -1,5 +1,9 @@
 # Minecraft inventory companion voor Eden Duo
 
+[![CI](https://github.com/erikvanhoolst/minecraft-companion/actions/workflows/ci.yml/badge.svg)](https://github.com/erikvanhoolst/minecraft-companion/actions/workflows/ci.yml)
+
+**[Download de nieuwste release](https://github.com/erikvanhoolst/minecraft-companion/releases/latest)** · [Directe download van het installatiepakket](https://github.com/erikvanhoolst/minecraft-companion/releases/latest/download/0100D71004694000.dsmod.zip)
+
 Een companion voor [Eden Duo](https://github.com/igawa6/eden-duo), de Switch-emulator voor Android-handhelds met twee schermen zoals de AYN Thor. Terwijl Minecraft op het bovenste scherm draait, toont het onderste scherm live je inventory: bovenaan armor, health, lucht en honger zoals de HUD van de game ze tekent, daaronder de 27 vakken van de hoofdinventory en de 9 hotbar-vakken met het geselecteerde vak, de iconen, de aantallen en de naam van het geselecteerde item zoals de game die toont, in het lettertype van de game.
 
 Een tweede tab, **Map**, toont de wereld rond de speler van bovenaf, zoals de kaart in de game ze tekent: elk blok in de kaartkleur die de game er zelf aan geeft, met schaduw naar hoogte en waterdiepte, op het kaartpapier van de game met de spelermarker in de kijkrichting. Ernaast staan de coördinaten (zoals "Show Coordinates" in de game ze toont) en de kijkrichting; met + en - zoom je tussen 64, 128 en 256 blokken breed. Wisselen tussen de tabs kan met de knoppen bovenaan of door over het scherm te vegen.
@@ -17,7 +21,7 @@ Eden Duo 1.1.0 (runtime 18) of nieuwer.
 
 ## Installeren
 
-1. Bouw het package (zie hieronder) of neem `dist/0100D71004694000.dsmod.zip`.
+1. Download **`0100D71004694000.dsmod.zip`** van [GitHub Releases](https://github.com/erikvanhoolst/minecraft-companion/releases/latest), of bouw het package zelf (zie hieronder). Kies de installatiezip bij de release-assets.
 2. In Eden Duo: houd Minecraft ingedrukt, kies **Add-ons**, **Install**, **Dual screen mods** en kies de zip. Met de Thor via USB aangesloten kan het ook met `scripts/thor.sh install`.
 3. Zet de Minecraft-update uit in Add-ons zolang 1.26.13 niet draait.
 4. Start Minecraft en open een wereld. Het onderste scherm toont eerst "WAITING FOR A WORLD" en daarna je inventory.
@@ -32,6 +36,10 @@ scripts/build.sh                 # Linux- en Android-module + dist/0100D71004694
 ```
 
 De ABI-headers van Eden Duo, nlohmann/json en stb_image zitten in `native/`, dus een Eden-checkout is niet nodig.
+
+## CI en releases
+
+GitHub Actions bouwt en controleert het Linux- en Android-package bij pull requests en pushes naar `main`. Een versietag (bijvoorbeeld `v0.3.0`) bouwt en publiceert automatisch een GitHub Release met de installatiezip en `SHA256SUMS`. Zie [docs/RELEASING.md](docs/RELEASING.md) voor de controles en het publiceren van volgende versies.
 
 ## Mappen
 
