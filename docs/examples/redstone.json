@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "active": 0,
+  "designs": [
+    {
+      "name": "Lever lamp",
+      "schema": [".........", ".Lwww>wwO", "........."],
+      "steps": [
+        {"text": "Place solid support blocks under the dust and repeater.", "done": false},
+        {"text": "Place the lever (L), dust (w), and lamp (O) on the same level.", "done": false},
+        {"text": "Place the repeater facing right (>), at its default one-tick delay.", "done": false},
+        {"text": "Flip the lever and check that the lamp turns on and off.", "done": false}
+      ],
+      "notes": "Top-down view; each cell is one block.\nRecord layer heights, repeater delays and your own changes here."
+    }
+  ]
+}

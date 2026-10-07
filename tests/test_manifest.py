@@ -52,7 +52,11 @@ class ManifestTests(unittest.TestCase):
                         action = actions[target]
                         if action["kind"] == "page":
                             pending.append(action["page"])
-        self.assertTrue({"inventory", "map", "waypoints", "projects"}.issubset(seen), seen)
+        self.assertTrue({"inventory", "map", "waypoints", "projects", "notebook"}.issubset(seen), seen)
+
+    def test_notebook_stays_open_when_inventory_readiness_changes(self):
+        notebook = next(page for page in self.manifest["pages"] if page["id"] == "notebook")
+        self.assertTrue(notebook.get("no_auto_leave"), "build instructions must remain visible during world loading")
 
     def test_feature_tabs_have_separate_touch_areas(self):
         actions = self.manifest["actions"]
@@ -61,9 +65,9 @@ class ManifestTests(unittest.TestCase):
                     if widget.get("on_tap") in actions
                     and actions[widget["on_tap"]]["kind"] == "page"
                     and widget.get("rect", [0, 999])[1] < 100]
-            self.assertEqual(len(tabs), 4, page["id"])
+            self.assertEqual(len(tabs), 5, page["id"])
             targets = {actions[tab["on_tap"]]["page"] for tab in tabs}
-            self.assertEqual(targets, {"inventory", "map", "waypoints", "projects"})
+            self.assertEqual(targets, {"inventory", "map", "waypoints", "projects", "notebook"})
             for index, tab in enumerate(tabs):
                 x, y, width, height = tab["rect"]
                 self.assertGreater(width, 0)
