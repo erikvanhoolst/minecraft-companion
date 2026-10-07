@@ -36,6 +36,41 @@ Remaining durability is `mMaxDamage - aux` for damageable items in 1.2.12, with 
 
 The inventory layout has small wear bars (green above 25%, amber above 10%, red at or below 10%), selected-tool remaining uses and percent, and a quiet amber warning line with no popup or sound. Equipment has four labeled slots with icons, wear bars and percentages.
 
+### Active potion effects
+
+Static analysis of the relocated 1.2.12 main image anchors the effect vector at
+LocalPlayer +0x1148: main+0x11EF1A8 returns that field, and HudMobEffectsRenderer
+(main+0x8C965C, getter call at +0x8C985C) iterates it by 16-byte entries indexed by
+effect ID. Instance getters at main+0x1159864, +0x115986C and +0x115987C read s32
+ID, remaining ticks and amplifier at +0, +4 and +8. The constructor at +0x11597E8
+stores boolean flags at +0xC..+0xE. Empty instances have ID zero; the tick method
+at +0x11598F4 decrements remaining ticks and expires an instance at zero.
+
+The static MobEffect pointer registry is main+0x3391A40, with IDs 0..25 before
+the next global at +0x3391B10. MobEffect stores its ID at +8 and its language key
+(`potion.moveSpeed`, for example) as a libc++ string at +0x20. The registration
+code at main+0x11569B8 stores each definition by ID. Readable fallback names are
+used when the definition or English language entry cannot be loaded.
+
+Entity::addEffect (main+0x11E3358) grows the vector to at least ID + 1; its helper
+at +0x11EFF20 can double capacity. The reader bounds size to 26 and capacity to 52,
+while copying only initialized entries. It copies the header and entries twice, validates
+active IDs against their indices, duration, amplifier and boolean flags, and clears
+all published rows on failure. Eight rows per page keep all 25 effect IDs reachable.
+Time comes directly from game ticks (20 per second), without wall-clock extrapolation.
+`effects.ready` distinguishes unavailable data from an empty readable list;
+`effects.row0..7.*` publish name, strength, formatted time and raw ID/level/ticks/seconds.
+The 1.26.13 offsets remain zero and disable effect reads.
+
+Guest-memory fixtures cover multiple effects, strength II and 256, decreasing and
+paused ticks, the last partial second, expiry, unreadable and torn snapshots,
+invalid fields and vector headers, all 25 IDs, pagination, world unload and the
+unsupported build. Desktop runtime checks verified the five-tab navigation and the
+waiting-state layout. The isolated game session stalled at Loading resource packs,
+so applied effects and countdowns have not yet been compared with a live in-game
+effect panel. Linux/Android builds and the complete package passed validation.
+See [effect behavior](features/effects.md).
+
 ### Item names
 
 The game names a stack by its description id plus `.name` in `texts/en_US.lang`. A block item (`item.planks`) is named after its block (`tile.planks`), and for many ids the aux value picks a variant first: `tile.planks` + aux 5 is `tile.planks.big_oak.name`, "Dark Oak Wood Planks". `native/mc_names.cpp` holds those variant tables (wood types, stone, colours, flowers, slabs, dyes, spawn eggs, potions, buckets, coal, skulls, tipped arrows, music discs, anvils).

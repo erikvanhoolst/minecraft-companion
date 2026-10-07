@@ -27,6 +27,11 @@
 //   hud.heart<i>, hud.armor<i>, hud.hunger<i>, hud.bubble<i>   (i = 0..9, left to right)
 //                        per-icon state like the game's HUD: 0 empty, 1 half, 2 full; a bubble
 //                        is 0 gone, 1 popping, 2 full. Hunger and bubbles fill from the right.
+//   effects.ready, effects.count   readable effect snapshot and active count
+//   effects.status, effects.page   empty/unavailable status and visible range
+//   effects.can_prev, effects.can_next   companion paging controls (eight rows)
+//   effects.row<i>.visible, .id, .level, .ticks, .seconds, .name, .strength, .time
+//                        i = 0..7; level is amplifier + 1; time is minutes:seconds
 //   mc.sample_us         cost of the last sample in microseconds
 
 #pragma once
@@ -115,11 +120,17 @@ struct Layout {
     u32 chunk_heightmap{};     // u16[256], index z * 16 + x: one above the top light-blocking block
     u64 block_registry{};      // Block* mBlocks[256] by legacy id (main-relative)
     u32 block_map_color{};     // Color (4 floats) inside Block: the colour the game's maps use
+    // Active effects: vector of 16-byte {s32 id, ticks, amplifier; u8 flags[3]}.
+    u32 player_effects{};
+    u64 effect_registry{};     // MobEffect* by id, main-relative (ids 0..25)
+    u32 effect_name{};         // std::string language key inside MobEffect
 };
 
 constexpr std::size_t SlotCount = 36;
 constexpr std::size_t ArmorSlotCount = 4;
 constexpr std::size_t HudIcons = 10;
+constexpr std::size_t EffectRows = 8;
+constexpr std::size_t EffectSlots = 26;
 
 bool SupportsBuildHex(const char* build_hex);
 bool SupportsBuildId(const u8* build_id);
@@ -176,6 +187,13 @@ private:
         bool equipment_ok{};
         std::array<Slot, ArmorSlotCount> equipment{};
     };
+    struct Effect {
+        int id{}, ticks{}, amplifier{};
+    };
+    struct Effects {
+        bool ready{};
+        std::vector<Effect> active;
+    };
 
     bool Resolve(const EdenDsmodHostApi& host);
     bool ValidateInventory(const EdenDsmodHostApi& host, u64 obj, u64& items_begin,
@@ -190,9 +208,14 @@ private:
     void Publish(const EdenDsmodHostApi& host, const std::array<Slot, SlotCount>& slots,
                  int selected, bool ready, const char* diag);
     void PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stats);
+    Effects ReadEffects(const EdenDsmodHostApi& host) const;
+    void PublishEffects(const EdenDsmodHostApi& host, const Effects& effects,
+                        const mc_assets::Library* assets);
     void PublishSlot(const EdenDsmodHostApi& host, const char* prefix, const Slot& slot, bool ready);
 
     InventorySnapshot snapshot;
+    std::size_t effects_page{};
+    std::size_t effects_count{};
     const Layout* layout{};
     u64 main_base{};
     u64 main_size{};

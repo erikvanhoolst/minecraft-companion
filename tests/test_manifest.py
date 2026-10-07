@@ -52,7 +52,7 @@ class ManifestTests(unittest.TestCase):
                         action = actions[target]
                         if action["kind"] == "page":
                             pending.append(action["page"])
-        self.assertTrue({"inventory", "map", "waypoints", "projects"}.issubset(seen), seen)
+        self.assertTrue({"inventory", "map", "waypoints", "projects", "effects"}.issubset(seen), seen)
 
     def test_feature_tabs_have_separate_touch_areas(self):
         actions = self.manifest["actions"]
@@ -61,9 +61,9 @@ class ManifestTests(unittest.TestCase):
                     if widget.get("on_tap") in actions
                     and actions[widget["on_tap"]]["kind"] == "page"
                     and widget.get("rect", [0, 999])[1] < 100]
-            self.assertEqual(len(tabs), 4, page["id"])
+            self.assertEqual(len(tabs), 5, page["id"])
             targets = {actions[tab["on_tap"]]["page"] for tab in tabs}
-            self.assertEqual(targets, {"inventory", "map", "waypoints", "projects"})
+            self.assertEqual(targets, {"inventory", "map", "waypoints", "projects", "effects"})
             for index, tab in enumerate(tabs):
                 x, y, width, height = tab["rect"]
                 self.assertGreater(width, 0)
@@ -73,6 +73,19 @@ class ManifestTests(unittest.TestCase):
                     ox, oy, ow, oh = other["rect"]
                     overlap = x < ox + ow and ox < x + width and y < oy + oh and oy < y + height
                     self.assertFalse(overlap, f"overlapping tabs on {page['id']}")
+
+    def test_effect_rows_and_paging_fit_on_screen(self):
+        page = next(page for page in self.manifest["pages"] if page["id"] == "effects")
+        for widget in page["widgets"]:
+            if widget.get("repeat"):
+                self.assertEqual(widget["repeat"], 8)
+                self.assertEqual(widget.get("need_bind"), "effects.row{i}.visible")
+                x, y, width, height = widget["rect"]
+                self.assertLess(y + height + 7 * widget["repeat_dy"], 986)
+        for action, binding in [("effects_previous", "effects.can_prev"),
+                                ("effects_next", "effects.can_next")]:
+            button = next(w for w in page["widgets"] if w.get("on_tap") == action)
+            self.assertEqual(button["need_bind"], binding)
 
 
 if __name__ == "__main__":

@@ -74,6 +74,8 @@ public:
     /// English display name from texts/en_US.lang ("item.apple.name", "tile.stone.stone.name"),
     /// or an empty string. Lock-free; empty until loaded.
     std::string DisplayName(std::string_view full_name) const;
+    /// Exact language key, including potion effect names ("potion.moveSpeed").
+    std::string LanguageText(std::string_view key) const;
     /// The name the game shows for a stack: its item's description id ("tile.log") with the
     /// variant the aux value selects (mc_names.h), or an empty string. Lock-free; empty until
     /// loaded.
