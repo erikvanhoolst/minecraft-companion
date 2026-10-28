@@ -76,6 +76,8 @@ int main() {
     Check(f.texts["waypoint.target"] == "Base" && f.ints["waypoint.active"] == 1 && f.ints["waypoint.arrow"] == 0,
           "mark selects new base and shows arrival");
     Check(std::filesystem::exists(file), "mark persists locally");
+    Check(f.texts["waypoint.portal"] == "Nether: X -2  Z -3",
+          "an Overworld place shows its Nether block, rounding down");
     f.ints["map.x"] = -7; f.ints["map.z"] = -16; f.ints["map.y"] = 70;
     points.Sample(f.host);
     Check(f.ints["waypoint.distance"] == 5 && f.ints["waypoint.dy"] == -6 && f.ints["waypoint.arrow"] == 1,
@@ -89,6 +91,8 @@ int main() {
     Check(f.ints["waypoint.count"] == 0 && f.ints["waypoint.active"] == 0, "dimension change isolates waypoints");
     f.Action(points, "waypoint_add", 2);
     Check(f.texts["waypoint.target"] == "Mine", "nether stores its own destination");
+    Check(f.texts["waypoint.portal"] == "Overworld: X 8000  Z -128",
+          "a Nether place shows its Overworld block");
     f.texts["world.key"] = "other-world"; points.Sample(f.host);
     Check(f.ints["waypoint.count"] == 0, "different world never reuses dimension waypoints");
     f.texts["world.key"] = "fixture-world"; f.ints["world.dimension"] = 0; points.Sample(f.host);
@@ -146,7 +150,8 @@ int main() {
     f.ints["map.ready"] = 0;
     restored.Sample(f.host);
     Check(f.ints["waypoint.active"] == 0 && f.ints["waypoint.arrow"] == 0 &&
-              f.ints["waypoint.marker"] == 0 && f.texts["waypoint.coords"].empty(),
+              f.ints["waypoint.marker"] == 0 && f.texts["waypoint.coords"].empty() &&
+              f.texts["waypoint.portal"].empty(),
           "map loss clears every navigation binding");
     Check(!relative.OnAction("unrelated", 0) && !relative.OnAction(nullptr, 0), "unknown actions ignored");
     std::filesystem::remove_all(directory);

@@ -15,6 +15,10 @@
 //   map.heading          the way the player faces, degrees clockwise from north
 //   map.x, map.y, map.z  the block the player stands in (y: the feet)
 //   map.facing           "North", "North-east", ...
+//   map.portal_ok        1 in the Overworld or Nether once the dimension is known
+//   map.portal_label     the other side of a portal: "Nether" or "Overworld"
+//   map.portal_coords    the matching block there, "X -12  Z 40" (Overworld / 8, Nether * 8)
+//   world.dimension_auto 1 while the dimension follows the game; Dimension is then refused
 //   map.diag             why map.ready is 0
 //   map.render_us        what the last picture cost to draw, in microseconds
 // Actions: "map_zoom_in", "map_zoom_out".
@@ -52,7 +56,10 @@ public:
     ~Map();
     /// Tick thread, after Reader::Sample. Cheap: it reads the player's place and asks for a new
     /// picture; a dedicated worker captures terrain even while the map tab is hidden.
-    void Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader);
+    /// `game_dimension` is the dimension the clock read this tick (-1 unknown) and
+    /// `dimension_object` its Dimension, which every drawn chunk must belong to.
+    void Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader,
+                int game_dimension = -1, u64 dimension_object = 0);
     /// Tick thread.
     bool OnAction(const char* action, s64 argument);
     /// Asset callback: fetch a completed picture for a "mapview/<n>" key.
@@ -72,7 +79,7 @@ private:
         bool scoped{}, route_start{};
         int player_x{}, player_z{};
         int origin_x{}, origin_z{}, view{};
-        u64 player{};
+        u64 player{}, dimension_object{};
         const mc_reader::Layout* layout{};
         std::array<u32, 256> colors{}; // 0x00RRGGBB per legacy block id, 0 = no map colour
     };
@@ -87,6 +94,7 @@ private:
                        mc_assets::Image& out, std::string& why);
     void Publish(const EdenDsmodHostApi& host, bool ready, const Place& place);
     void Invalidate();
+    void FollowDimension(int id, u64 object);
     void Worker();
     bool DrawRequest(const EdenDsmodHostApi& host, const Request& request);
 
@@ -108,6 +116,8 @@ private:
     std::size_t selected_world{};
     int dimension{};
     bool confirmed{}, player_was_ready{};
+    bool dimension_auto{};           // the game's dimension was read for this player
+    u64 dimension_object{};          // its Dimension, while dimension_auto
     u64 previous_player{};
     bool show_routes{true};
     Request pending;                 // the newest picture asked for

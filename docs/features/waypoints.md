@@ -23,11 +23,17 @@ current viewport.
 
 Lists and active destinations are isolated by `world.key` and `world.dimension`.
 They are available only when both `world.ready` and `map.ready` are set. The world
-identity feature requires explicit world/dimension selection and confirmation
-because this repository has no verified offsets for a persistent game-world ID
-or dimension. Confirm the identity on **Map** before marking a place, and select
-the correct world/dimension when switching games or portals. Returning to a
-previous scope restores its selected destination. Unsupported or disconnected
+requires explicit selection and confirmation because this repository has no
+verified offsets for a persistent game-world ID. The dimension is read from the
+game, so going through a portal switches to that dimension's waypoints without a
+new confirmation. Confirm the world on **Map** before marking a place, and select
+the correct world when switching games. Returning to a previous scope restores
+its selected destination.
+
+`waypoint.portal` shows the selected place's block on the other side of a
+portal: `Nether: X -2  Z -3` for an Overworld waypoint (X and Z divided by eight,
+rounded down) and `Overworld: X 8000  Z -128` for a Nether waypoint (multiplied
+by eight). It is empty in the End and without a selection. Unsupported or disconnected
 worlds clear arrows, markers and list rows instead of showing stale navigation.
 
 ## Local storage

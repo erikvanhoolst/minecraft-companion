@@ -130,9 +130,10 @@ void SampleCallback(void* p, const EdenDsmodHostApi* host) {
         if (p && host) {
             auto* m = static_cast<Module*>(p);
             m->reader.Sample(*host, &m->assets);
-            mc_clock::Sample(*host, m->reader.ActiveLayout(), m->reader.Player(),
-                             m->reader.InventoryState().ready);
-            m->map.Sample(*host, m->reader);
+            const auto dimension = mc_clock::Sample(*host, m->reader.ActiveLayout(),
+                                                    m->reader.Player(),
+                                                    m->reader.InventoryState().ready);
+            m->map.Sample(*host, m->reader, dimension.id, dimension.address);
             m->waypoints.Sample(*host);
             m->projects.Sample(*host, m->reader.InventoryState());
             m->console.Tick(*host, m->reader, &m->assets);

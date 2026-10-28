@@ -27,10 +27,17 @@
 //   player.health, player.health_max, player.hunger, player.armor, player.air, player.air_max
 //                        the local player's state as the game's HUD shows it (half icons:
 //                        health 20 = ten hearts, air 0..air_max)
-//   player.<stat>_ok     1 while that value was read this tick (health, hunger, armor, air)
+//   player.<stat>_ok     1 while that value was read this tick (health, hunger, armor, air,
+//                        absorption, saturation)
+//   player.absorption    extra health from absorption in half hearts (golden apple: 4)
+//   player.absorption_label   the same in hearts for the gold heart, "x2" or "x1.5"; "" at 0
+//   player.saturation    hidden food saturation in half shanks (0..20, never above hunger)
+//   player.xp_ok, player.level, player.xp_progress   experience level and progress through
+//                        it in thousandths, as the game's experience bar
 //   hud.heart<i>, hud.armor<i>, hud.hunger<i>, hud.bubble<i>   (i = 0..9, left to right)
 //                        per-icon state like the game's HUD: 0 empty, 1 half, 2 full; a bubble
 //                        is 0 gone, 1 popping, 2 full. Hunger and bubbles fill from the right.
+//   hud.saturation<i>    saturation over the hunger icon at the same index, 0 none, 1 half, 2 full
 //   effects.ready, effects.count   readable effect snapshot and active count
 //   effects.status, effects.page   empty/unavailable status and visible range
 //   effects.can_prev, effects.can_next   companion paging controls (eight rows)
@@ -103,6 +110,10 @@ struct Layout {
                               // std::string, AttributeInstance> pointing at static Attributes
     u64 attr_health{};        // the static Attribute objects (main-relative)
     u64 attr_hunger{};
+    u64 attr_absorption{};    // 0 = not located: the value stays unavailable
+    u64 attr_saturation{};
+    u64 attr_level{};
+    u64 attr_experience{};    // progress through the current level, 0..1
     u32 attr_attribute{};     // Attribute const* inside AttributeInstance
     u32 attr_value{};         // float current value inside AttributeInstance (current max at -4)
     u32 player_entity_data{}; // SynchedActorData: std::vector<std::unique_ptr<DataItem>>
@@ -131,6 +142,7 @@ struct Layout {
     u32 view_bounds{};         // PlayerChunkSource: ints min x, y, z, max x, y, z, size x, y, z
     u32 view_chunks{};         // std::vector<std::shared_ptr<LevelChunk>>, row-major by z
     u32 chunk_pos{};           // LevelChunk: ChunkPos (int x, int z)
+    u32 chunk_dimension{};     // LevelChunk: Dimension* it belongs to (0: not checked)
     u32 chunk_subchunks{};     // 16 pointers to SubChunk block data, bottom up
     u32 chunk_heightmap{};     // u16[256], index z * 16 + x: one above the top light-blocking block
     u64 block_registry{};      // Block* mBlocks[256] by legacy id (main-relative)
@@ -203,7 +215,9 @@ private:
         int max{};
     };
     struct PlayerStats {
-        Stat health, hunger, armor, air;
+        Stat health, hunger, armor, air, absorption, saturation;
+        bool xp_ok{};
+        int level{}, xp_progress{}; // progress in thousandths
         bool equipment_ok{};
         std::array<Slot, ArmorSlotCount> equipment{};
     };
@@ -224,6 +238,8 @@ private:
     bool ReadString(const EdenDsmodHostApi& host, u64 at, std::string& out) const;
     void NameSlot(const EdenDsmodHostApi& host, Slot& slot, const mc_assets::Library* assets);
     PlayerStats ReadPlayer(const EdenDsmodHostApi& host);
+    bool ReadAttributeValue(const EdenDsmodHostApi& host, u64 attribute, u64& cached,
+                            float limit, float& value, float& max);
     bool ReadAttribute(const EdenDsmodHostApi& host, u64 attribute, u64& cached, Stat& out);
     void Publish(const EdenDsmodHostApi& host, const std::array<Slot, SlotCount>& slots,
                  int selected, bool ready, const char* diag);
@@ -256,8 +272,9 @@ private:
     u64 items_count{};
     u64 player_inventory{}; // resolved PlayerInventory object, 0 while unknown
     u64 player{};           // the LocalPlayer the inventory belongs to
-    u64 health_instance{};  // the player's AttributeInstances, found by walking the map once
-    u64 hunger_instance{};
+    // The player's AttributeInstances, found by walking the map once: health, hunger,
+    // absorption, saturation, level, experience.
+    std::array<u64, 6> attribute_instances{};
     std::vector<u64> pinv_candidates; // PlayerInventory objects seen during the sweep
     u64 scan_cursor{};      // heap scan position for the vtable search
     u32 scan_ticks{};

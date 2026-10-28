@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft second-screen companion: live inventory, equipment, active potion effects and HUD; remembered terrain and routes per confirmed world/dimension; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts; world time and sunset countdown. Assets come from the player’s own game.",
+ "_about": "Minecraft second-screen companion: live inventory, equipment, active potion effects and HUD with absorption, saturation and experience; remembered terrain and routes per confirmed world and detected dimension, with portal coordinates; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts; world time and sunset countdown. Assets come from the player’s own game.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -525,6 +525,117 @@
      "need_bind": "player.hunger_ok",
      "repeat": 10,
      "repeat_dx": 48
+    },
+    {
+     "_note": "saturation, the hunger the game hides: a gold outline on each shank it covers (full, then half)",
+     "type": "rect",
+     "rect": [
+      689,
+      175,
+      48,
+      48
+     ],
+     "bg": "#00000000",
+     "color": "#FFFFC857",
+     "frame": 3,
+     "repeat": 10,
+     "repeat_dx": 48,
+     "need_bind": "player.saturation_ok",
+     "hide_bind": "hud.saturation{i}",
+     "keep_min": 2
+    },
+    {
+     "type": "rect",
+     "rect": [
+      689,
+      175,
+      48,
+      48
+     ],
+     "bg": "#00000000",
+     "color": "#80FFC857",
+     "frame": 3,
+     "repeat": 10,
+     "repeat_dx": 48,
+     "need_bind": "player.saturation_ok",
+     "hide_bind": "hud.saturation{i}",
+     "keep_min": 1,
+     "keep_max": 1
+    },
+    {
+     "_note": "absorption (golden apple): one gold heart and the extra hearts, between health and hunger",
+     "type": "image",
+     "rect": [
+      566,
+      181,
+      36,
+      36
+     ],
+     "color": "#FFFFFFFF",
+     "src": "module:mc:ui/absorption_heart",
+     "need_bind": "player.absorption_ok",
+     "hide_bind": "player.absorption",
+     "keep_min": 1
+    },
+    {
+     "type": "label",
+     "rect": [
+      610,
+      187,
+      0,
+      0
+     ],
+     "bind_text": "player.absorption_label",
+     "text_scale": 3,
+     "color": "#FFFFC857",
+     "need_bind": "player.absorption_ok"
+    },
+    {
+     "_note": "experience: the game's level number over a green progress bar",
+     "type": "rect",
+     "rect": [
+      66,
+      236,
+      1108,
+      16
+     ],
+     "bg": "#FF202020",
+     "color": "#FF000000",
+     "frame": 2,
+     "need_bind": "player.xp_ok"
+    },
+    {
+     "type": "bar",
+     "rect": [
+      68,
+      238,
+      1104,
+      12
+     ],
+     "bind": "player.xp_progress",
+     "max": 1000,
+     "bg": "#00000000",
+     "color": "#FF7EFC20",
+     "frame": 0,
+     "need_bind": "player.xp_ok"
+    },
+    {
+     "type": "value",
+     "rect": [
+      620,
+      222,
+      0,
+      0
+     ],
+     "bind": "player.level",
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FF80FF20",
+     "outline": "#FF000000",
+     "outline_px": 3,
+     "need_bind": "player.xp_ok",
+     "hide_bind": "player.level",
+     "keep_min": 1
     },
     {
      "_note": "main inventory, slots 9..35, three rows of nine",
@@ -2060,6 +2171,33 @@
      "need_bind": "map.ready"
     },
     {
+     "_note": "the matching block on the other side of a portal (Overworld / 8, Nether * 8)",
+     "type": "label",
+     "rect": [
+      924,
+      360,
+      0,
+      0
+     ],
+     "bind_text": "map.portal_label",
+     "text_scale": 2,
+     "color": "#FFC9A0F0",
+     "need_bind": "map.portal_ok"
+    },
+    {
+     "type": "label",
+     "rect": [
+      924,
+      384,
+      0,
+      0
+     ],
+     "bind_text": "map.portal_coords",
+     "text_scale": 3,
+     "color": "#FFFFFFFF",
+     "need_bind": "map.portal_ok"
+    },
+    {
      "_note": "zoom: 64, 128 or 256 blocks across",
      "type": "label",
      "rect": [
@@ -2255,7 +2393,36 @@
      "border": 3,
      "on_tap": "world_dimension",
      "bg": "#FF262626",
-     "color": "#FFFFFFFF"
+     "color": "#FFFFFFFF",
+     "need_bind": "!world.dimension_auto"
+    },
+    {
+     "_note": "the dimension follows the game once it has been read",
+     "type": "rect",
+     "rect": [
+      256,
+      992,
+      260,
+      64
+     ],
+     "bg": "#FF1E1E1E",
+     "color": "#FF3A3A3A",
+     "frame": 3,
+     "need_bind": "world.dimension_auto"
+    },
+    {
+     "type": "label",
+     "rect": [
+      386,
+      1016,
+      0,
+      0
+     ],
+     "text": "Dim: auto",
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FF9AA4B0",
+     "need_bind": "world.dimension_auto"
     },
     {
      "type": "button",
@@ -3032,6 +3199,21 @@
      "color": "#FFFFFFFF",
      "need_bind": "waypoint.active",
      "bind_text": "waypoint.coords",
+     "align": "center"
+    },
+    {
+     "_note": "the selected place's block on the other side of a portal",
+     "type": "label",
+     "rect": [
+      1000,
+      658,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFC9A0F0",
+     "need_bind": "waypoint.active",
+     "bind_text": "waypoint.portal",
      "align": "center"
     },
     {
@@ -5108,7 +5290,7 @@
    "haptic": "click"
   }
  },
- "_world_setup": "Optional top-level world_keys/world_key, world_dimension (0 Overworld, 1 Nether, 2 End), and absolute data_directory. Select and confirm the active world/dimension on Map before recording history or waypoints.",
+ "_world_setup": "Optional top-level world_keys/world_key, world_dimension (0 Overworld, 1 Nether, 2 End; the initial choice until the game's dimension is read), and absolute data_directory. Select and confirm the active world on Map before recording history or waypoints; the dimension follows the game.",
  "world_keys": [
   "World 1",
   "World 2",

@@ -50,6 +50,9 @@ Above the inventory, Minecraft-style HUD indicators show:
 - **Hunger:** ten food icons, including partially filled icons.
 - **Armor:** the total protection provided by your equipped armor, shown as armor icons.
 - **Air supply:** ten bubbles that pop and disappear as your air supply decreases.
+- **Absorption:** extra hearts, for example from a golden apple, as a gold heart with the number of extra hearts (**x2**) between health and hunger.
+- **Saturation:** the food saturation the game itself does not show, as a gold outline around each hunger icon it covers. A half-covered icon has a fainter outline. While saturation lasts, your hunger does not drop.
+- **Experience:** your level in green above a progress bar, as in the game's own HUD.
 
 These values are available for Minecraft **1.2.12**. If a value cannot be read reliably, the app hides the corresponding HUD row.
 
@@ -67,16 +70,19 @@ The **Map** tab shows a top-down view of the terrain around your character:
 - **In-game map colors:** each block uses its own map color, with lighter and darker shades for height differences and water depth.
 - **Player marker:** the marker on the map paper rotates to match the direction you are facing.
 - **Coordinates:** X, Y, and Z appear beside the map. Y is measured at your feet, matching Minecraft's coordinate display.
+- **Portal coordinates:** in the Overworld the app also shows the matching Nether block (X and Z divided by eight); in the Nether it shows the matching Overworld block (multiplied by eight). Build a portal there to link it to one on the other side.
 - **Heading:** the app shows one of eight compass directions, such as north, east, or southwest. On-screen labels are in English.
 - **Zoom:** tap **+** to zoom in and **−** to zoom out. The map covers 64 × 64, 128 × 128, or 256 × 256 blocks; the default is 128 × 128.
 
 A background worker records terrain even while another tab is open. Moving and zooming request a new image; while you stand still, the map refreshes approximately once per second at 60 updates per second. **Routes** toggles the gold trace of your earlier routes. History saves every five seconds and on normal shutdown. The previous image remains in the background while the new map loads.
 
-On **Map**, choose a **World** preset and **Dimension**, then tap **Confirm**. Assign a different preset to each save. The package includes World 1, World 2 and World 3; custom names and more presets can be configured with the helper below. Confirm again after loading a world, and choose the destination dimension when using a portal. Automatic save and dimension identification is unavailable because the game memory offsets have not been verified. See [exploration history](docs/features/exploration.md) for storage limits and setup.
+On **Map**, choose a **World** preset, then tap **Confirm**. Assign a different preset to each save. The package includes World 1, World 2 and World 3; custom names and more presets can be configured with the helper below. Confirm again after loading a world. The dimension follows the game automatically: the button shows **Dim: auto**, and going through a portal switches the map, history and waypoints to the other dimension while keeping the confirmed world. Only while the dimension cannot be read does **Dimension** let you choose it yourself. Saves cannot be identified automatically, so the world preset remains your choice. See [exploration history](docs/features/exploration.md) for storage limits and setup.
 
 ### Waypoints
 
 Open **Waypoints** and tap **Base**, **Village**, **Mine** or **Place** to mark your current position. Select a saved row to navigate there. The arrow points relative to the direction you face, with horizontal distance in blocks and a separate height difference. The selected destination also appears on Map. **Stop** ends navigation; **Delete** removes the selected waypoint.
+
+For a selected waypoint in the Overworld or Nether, the matching block on the other side of a portal appears below its coordinates, such as **Nether: X -2  Z -3**.
 
 Waypoints and active destinations are stored separately per confirmed world and dimension. Up to 64 markers are supported per map; repeated labels receive numbers. See [waypoint controls and storage](docs/features/waypoints.md).
 
@@ -128,7 +134,7 @@ Until a valid inventory has been read, the app displays **Waiting for a world** 
 
 - The inventory is a display only: moving items, selecting a hotbar slot by touch, managing chests, and crafting are not supported.
 - The offhand slot is not shown. Equipment and durability are unavailable for the experimental 1.26.13 layout.
-- The map is a surface map, with remembered terrain only in areas the companion observed. It is not a cave map. World and dimension selection requires manual confirmation; presets must match the actual save.
+- The map is a surface map, with remembered terrain only in areas the companion observed. It is not a cave map. The world preset requires manual confirmation and must match the actual save; the dimension is detected automatically.
 - The map is implemented only for Minecraft 1.2.12. Nether behavior has not been tested; the current heightmap may show the roof there.
 - Item icons come from the game's vanilla resource packs. Items from custom packs may therefore have no icon.
 
@@ -147,7 +153,7 @@ Use Eden Duo **1.1.0 with runtime 18 or later**. The module accepts only the ful
 2. In Eden Duo, long-press Minecraft and choose **Add-ons → Install → Dual screen mods**. Select the ZIP file.
 3. Disable the Minecraft update in **Add-ons** to use the tested 1.2.12 base game.
 4. Launch Minecraft and open a world. The bottom screen first displays **Waiting for a world**, then your inventory.
-5. Open **Map**, choose the matching world preset and dimension, and tap **Confirm** to record exploration and enable **Waypoints**. Use **Projects** for material lists. Configure writable storage on Android as described above.
+5. Open **Map**, choose the matching world preset, and tap **Confirm** to record exploration and enable **Waypoints**. Use **Projects** for material lists. Configure writable storage on Android as described above.
 
 ## Building
 

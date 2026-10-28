@@ -95,6 +95,12 @@ constexpr Layout Layouts[] = {
         .player_attributes = 0x1140,
         .attr_health = 0x338F040,
         .attr_hunger = 0x3399B88,
+        // The same map (amap, live): "minecraft:absorption" (max 16), "player.saturation"
+        // (max 20), "player.level" (max 24791) and "player.experience" (progress, max 1).
+        .attr_absorption = 0x338F0E0,
+        .attr_saturation = 0x3399BA8,
+        .attr_level = 0x3399BE8,
+        .attr_experience = 0x3399C08,
         .attr_attribute = 0x10,
         .attr_value = 0x84, // {min, max, value} default at +0x70, current at +0x7C
         // SynchedActorData items 7 (AIR) and 43 (MAX_AIR), both 400 above water.
@@ -132,6 +138,7 @@ constexpr Layout Layouts[] = {
         .view_bounds = 0xD0,
         .view_chunks = 0x100,
         .chunk_pos = 0x28,
+        .chunk_dimension = 0x08, // the clock's Dimension (live)
         .chunk_subchunks = 0xB8,
         .chunk_heightmap = 0x640,
         .block_registry = 0x33A4BE8,
@@ -492,9 +499,12 @@ void Reader::NameSlot(const EdenDsmodHostApi& host, Slot& slot, const mc_assets:
     slot.name = std::move(name);
 }
 
-bool Reader::ReadAttribute(const EdenDsmodHostApi& host, u64 attribute, u64& cached, Stat& out) {
+bool Reader::ReadAttributeValue(const EdenDsmodHostApi& host, u64 attribute, u64& cached,
+                                float limit, float& value, float& max) {
     // The instance is found once by walking the player's attribute map for the instance that
     // points at the static Attribute, then re-checked by that pointer on every read.
+    if (!attribute)
+        return false;
     const u64 want = main_base + attribute;
     const auto points_at_attribute = [&](u64 instance) {
         u64 a{};
@@ -517,10 +527,14 @@ bool Reader::ReadAttribute(const EdenDsmodHostApi& host, u64 attribute, u64& cac
         if (!cached)
             return false;
     }
+    return Read(host, cached + layout->attr_value, value) &&
+           Read(host, cached + layout->attr_value - 4, max) && value >= 0.0f && value <= limit &&
+           max >= 0.0f && max <= limit;
+}
+
+bool Reader::ReadAttribute(const EdenDsmodHostApi& host, u64 attribute, u64& cached, Stat& out) {
     float value{}, max{};
-    if (!Read(host, cached + layout->attr_value, value) ||
-        !Read(host, cached + layout->attr_value - 4, max) || !(value >= 0.0f && value <= 1024.0f) ||
-        !(max >= 0.0f && max <= 1024.0f))
+    if (!ReadAttributeValue(host, attribute, cached, 1024.0f, value, max))
         return false;
     // The HUD rounds up: 0.5 health left still shows half a heart.
     out.value = static_cast<int>(std::ceil(value));
@@ -534,8 +548,20 @@ Reader::PlayerStats Reader::ReadPlayer(const EdenDsmodHostApi& host) {
     if (!player)
         return stats;
     if (layout->player_attributes) {
-        ReadAttribute(host, layout->attr_health, health_instance, stats.health);
-        ReadAttribute(host, layout->attr_hunger, hunger_instance, stats.hunger);
+        auto& cached = attribute_instances;
+        ReadAttribute(host, layout->attr_health, cached[0], stats.health);
+        ReadAttribute(host, layout->attr_hunger, cached[1], stats.hunger);
+        ReadAttribute(host, layout->attr_absorption, cached[2], stats.absorption);
+        ReadAttribute(host, layout->attr_saturation, cached[3], stats.saturation);
+        // Experience is a fraction of the level and the level can exceed the HUD's range, so
+        // neither goes through the rounded, 1024-bounded HUD stat.
+        float level{}, progress{}, max{};
+        if (ReadAttributeValue(host, layout->attr_level, cached[4], 1.0e6f, level, max) &&
+            ReadAttributeValue(host, layout->attr_experience, cached[5], 1.0f, progress, max)) {
+            stats.xp_ok = true;
+            stats.level = static_cast<int>(level);
+            stats.xp_progress = std::clamp(static_cast<int>(progress * 1000.0f), 0, 1000);
+        }
     }
 
     if (layout->player_entity_data) {
@@ -766,6 +792,16 @@ void Reader::PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stat
     publish("hunger", stats.hunger);
     publish("armor", stats.armor);
     publish("air", stats.air);
+    publish("absorption", stats.absorption);
+    publish("saturation", stats.saturation);
+    // Absorption as the HUD's gold hearts: two points per heart.
+    const int absorption = stats.absorption.ok ? stats.absorption.value : 0;
+    const std::string hearts = absorption <= 0 ? "" :
+        "x" + std::to_string(absorption / 2) + (absorption % 2 ? ".5" : "");
+    host.publish_text(host.userdata, "player.absorption_label", hearts.c_str());
+    host.publish_i64(host.userdata, "player.xp_ok", stats.xp_ok);
+    host.publish_i64(host.userdata, "player.level", stats.xp_ok ? stats.level : 0);
+    host.publish_i64(host.userdata, "player.xp_progress", stats.xp_ok ? stats.xp_progress : 0);
     host.publish_i64(host.userdata, "equip.ready", stats.equipment_ok ? 1 : 0);
     for (std::size_t i = 0; i < ArmorSlotCount; ++i) {
         char prefix[32];
@@ -794,6 +830,13 @@ void Reader::PublishPlayer(const EdenDsmodHostApi& host, const PlayerStats& stat
         host.publish_i64(host.userdata, key, half_icons(stats.armor.value, i));
         std::snprintf(key, sizeof(key), "hud.hunger%d", i);
         host.publish_i64(host.userdata, key, half_icons(stats.hunger.value, from_right));
+        // Saturation never exceeds hunger, so it outlines shanks that are drawn.
+        std::snprintf(key, sizeof(key), "hud.saturation%d", i);
+        host.publish_i64(host.userdata, key,
+                         stats.saturation.ok && stats.hunger.ok
+                             ? half_icons(std::min(stats.saturation.value, stats.hunger.value),
+                                          from_right)
+                             : 0);
         std::snprintf(key, sizeof(key), "hud.bubble%d", i);
         host.publish_i64(host.userdata, key,
                          from_right < bubbles_full ? 2 : from_right < bubbles_shown ? 1 : 0);
@@ -993,8 +1036,7 @@ void Reader::Sample(const EdenDsmodHostApi& host, const mc_assets::Library* asse
             inventory = 0;
             player_inventory = 0;
             player = 0;
-            health_instance = 0;
-            hunger_instance = 0;
+            attribute_instances = {};
             name_cache.clear();
             diag = "inventory went away; rescanning";
         }
@@ -1075,8 +1117,7 @@ bool Reader::OnAction(const char* action, s64 argument) {
         player_inventory = 0;
         player = 0;
         name_cache.clear();
-        health_instance = 0;
-        hunger_instance = 0;
+        attribute_instances = {};
         scan_cursor = 0;
         return true;
     }

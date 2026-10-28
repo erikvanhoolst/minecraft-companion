@@ -64,16 +64,18 @@ bool ReadState(const EdenDsmodHostApi& host, const mc_reader::Layout& l,
 }
 } // namespace
 
-void Sample(const EdenDsmodHostApi& host, const mc_reader::Layout* layout,
-            u64 player, bool world_ready) {
+Dimension Sample(const EdenDsmodHostApi& host, const mc_reader::Layout* layout,
+                 u64 player, bool world_ready) {
     bool ready = false, countdown_ok = false, soon = false;
     s64 ticks = -1, seconds = -1;
     std::string time = "World --:--", sunset = "World time unavailable";
     State first{}, second{};
+    Dimension dimension;
     if (!layout || !layout->level_time || !layout->player_block_source) {
         sunset = "Clock unavailable for this build";
     } else if (world_ready && player && ReadState(host, *layout, player, first) &&
                ReadState(host, *layout, player, second) && first == second) {
+        dimension = {first.id, first.dimension};
         if (first.id != 0) {
             sunset = first.id == 1 ? "No sunset in Nether" : "No sunset in End";
         } else {
@@ -111,5 +113,6 @@ void Sample(const EdenDsmodHostApi& host, const mc_reader::Layout* layout,
     host.publish_i64(host.userdata, "clock.soon", soon);
     host.publish_text(host.userdata, "clock.time", time.c_str());
     host.publish_text(host.userdata, "clock.sunset", sunset.c_str());
+    return dimension;
 }
 } // namespace mc_clock

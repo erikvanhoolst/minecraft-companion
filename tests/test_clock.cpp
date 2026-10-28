@@ -169,6 +169,22 @@ int main() {
         Check(f.texts["clock.sunset"] == (id == 1 ? "No sunset in Nether" : "No sunset in End"),
               "dimensions without a sun have no countdown");
     }
+    for (int id : {0, 1, 2}) {
+        f.Dimension(id);
+        const auto seen = mc_clock::Sample(f.host, f.layout, f.player, true);
+        Check(seen.id == id && seen.address == f.dimension,
+              "the verified dimension and its object are returned");
+    }
+    f.torn = f.dimension + f.layout->dimension_id;
+    f.reads = 0;
+    Check(mc_clock::Sample(f.host, f.layout, f.player, true).id == -1,
+          "a torn dimension read is unknown");
+    f.torn = 0;
+    f.Put(f.dimension, f.host.main_base + f.layout->vt_dimensions[1]);
+    Check(mc_clock::Sample(f.host, f.layout, f.player, true).id == -1,
+          "a dimension id needs its own dimension type");
+    Check(mc_clock::Sample(f.host, f.layout, f.player, false).id == -1,
+          "no dimension without a world");
     f.Dimension(0);
     for (u64 at : {f.player, f.player + f.layout->player_block_source, f.source,
                    f.source + f.layout->source_dimension, f.dimension,

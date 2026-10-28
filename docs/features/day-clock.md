@@ -24,7 +24,8 @@ An unreadable game rule shows **Sunset countdown unavailable** while retaining
 readable time.
 
 The player's actual dimension is read from memory independently of the map's
-manually selected world and dimension. Nether and End display **No sunset in Nether**
+manually selected world. The map uses the same verified dimension to follow
+portals (see [exploration](exploration.md)). Nether and End display **No sunset in Nether**
 or **No sunset in End**, with **World --:--**. An invalid or changing pointer chain,
 unreadable time, or unavailable inventory/player clears previous values and shows
 **World time unavailable**. The experimental 1.26.13 build displays

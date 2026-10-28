@@ -52,8 +52,8 @@ struct Fixture {
 };
 namespace mc_map {
 struct MapTestAccess {
-    static bool Draw(Map& map,Fixture& f,std::string world,int dimension,std::uint64_t serial,bool fresh=true) {
-        Map::Request r; r.serial=serial;r.world=std::move(world);r.dimension=dimension;r.scoped=true;r.view=16;r.player=Fixture::Base+0x100;r.layout=&f.layout;r.colors[1]=0x112233;r.player_x=r.player_z=1000;
+    static bool Draw(Map& map,Fixture& f,std::string world,int dimension,std::uint64_t serial,bool fresh=true,std::uint64_t owner=0) {
+        Map::Request r; r.serial=serial;r.world=std::move(world);r.dimension=dimension;r.scoped=true;r.view=16;r.player=Fixture::Base+0x100;r.layout=&f.layout;r.colors[1]=0x112233;r.player_x=r.player_z=1000;r.dimension_object=owner;
         { std::lock_guard lock{map.mutex}; r.generation=map.generation; map.pending=r; }
         if (!fresh) map.Invalidate();
         return map.DrawRequest(f.host,r);
@@ -67,6 +67,11 @@ struct MapTestAccess {
     static void Publish(Map& map,Fixture& f,bool player=true) {
         map.serial=std::max<std::uint64_t>(map.serial,1);map.player_was_ready=player;
         map.Publish(f.host,player,Map::Place{});
+    }
+    static void Follow(Map& map,int id,std::uint64_t object) { map.FollowDimension(id,object); }
+    static void PublishAt(Map& map,Fixture& f,double x,double z) {
+        map.serial=std::max<std::uint64_t>(map.serial,1);map.player_was_ready=true;
+        map.Publish(f.host,true,Map::Place{x,64,z,0});
     }
     static bool Await(Map& map) {
         std::unique_lock lock{map.mutex};
@@ -124,6 +129,36 @@ int main() {
         Check(f.ints["world.dimension"]==1&&f.ints["world.ready"]==0,"changing dimension keeps scope unconfirmed");
         mc_map::MapTestAccess::Publish(identity,f,false);
         Check(!identity.OnAction("world_confirm",0),"a missing player cannot confirm an identity");
+    }
+    {
+        mc_map::Map portal("{\"world_keys\":[\"A\"],\"world_key\":\"A\",\"data_directory\":\"\"}");
+        mc_map::MapTestAccess::PublishAt(portal,f,-17.5,40.2);
+        Check(f.ints["world.dimension_auto"]==0&&f.ints["map.portal_ok"]==0,"an unconfirmed manual dimension has no portal coordinates");
+        mc_map::MapTestAccess::Follow(portal,0,Fixture::Base+0x8000);
+        mc_map::MapTestAccess::PublishAt(portal,f,-17.5,40.2);
+        Check(f.ints["world.dimension_auto"]==1&&f.texts["world.diag"]=="Choose world, then Confirm","a read dimension only needs the world confirmed");
+        Check(f.ints["map.portal_ok"]==1&&f.texts["map.portal_label"]=="Nether"&&f.texts["map.portal_coords"]=="X -3  Z 5","Overworld blocks divide by eight, rounding down");
+        Check(!portal.OnAction("world_dimension",0)&&f.ints["world.dimension"]==0,"the manual dimension is refused while the game's is known");
+        Check(portal.OnAction("world_confirm",0),"world confirmed");
+        mc_map::MapTestAccess::Follow(portal,1,Fixture::Base+0x9000);
+        mc_map::MapTestAccess::PublishAt(portal,f,-3,5);
+        Check(f.ints["world.ready"]==1&&f.ints["world.dimension"]==1&&f.texts["world.label"]=="A / Nether","a portal keeps the confirmed world and switches dimension");
+        Check(f.texts["map.portal_label"]=="Overworld"&&f.texts["map.portal_coords"]=="X -24  Z 40","Nether blocks multiply by eight");
+        mc_map::MapTestAccess::Follow(portal,-1,0);
+        mc_map::MapTestAccess::PublishAt(portal,f,-3,5);
+        Check(f.ints["world.dimension"]==1&&f.ints["world.dimension_auto"]==1,"an unreadable tick keeps the last dimension");
+        mc_map::MapTestAccess::Follow(portal,2,Fixture::Base+0xA000);
+        mc_map::MapTestAccess::PublishAt(portal,f,0,0);
+        Check(f.ints["map.portal_ok"]==0&&f.texts["map.portal_coords"].empty(),"the End has no portal coordinates");
+    }
+    {
+        mc_map::Map owned(session_config.c_str());
+        f.layout.chunk_dimension=0x8; f.Put<std::uint64_t>(0x1008,Fixture::Base+0x8000);
+        Check(mc_map::MapTestAccess::Draw(owned,f,"A",0,1,true,Fixture::Base+0x8000),"chunks of the player's dimension draw");
+        Check(owned.Load(f.host,"mapview/1")->rgba[3]==255,"owned chunk is captured");
+        Check(mc_map::MapTestAccess::Draw(owned,f,"B",1,2,true,Fixture::Base+0x9000),"a view of another dimension still completes");
+        Check(owned.Load(f.host,"mapview/2")->rgba[3]==0,"chunks left over from the other dimension are never recorded");
+        f.layout.chunk_dimension=0;
     }
     {
         mc_map::Map map(session_config.c_str());

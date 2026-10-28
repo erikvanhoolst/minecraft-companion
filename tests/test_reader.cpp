@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <utility>
 #include <string>
 #include <vector>
 
@@ -291,8 +292,70 @@ void TestEffects() {
           "unsupported effects stay unavailable");
 }
 
+void TestPlayerAttributes() {
+    // The player's attribute map: libc++ unordered_map nodes {next, hash, key, instance at +0x28}.
+    Fixture f;
+    Reader reader(f.host, nullptr);
+    const u64 map = Fixture::Base + 0xE000;
+    const u64 attributes[] = {f.layout->attr_health,     f.layout->attr_hunger,
+                              f.layout->attr_absorption, f.layout->attr_saturation,
+                              f.layout->attr_level,      f.layout->attr_experience};
+    const float maxima[] = {20, 20, 16, 20, 24791, 1};
+    const auto value_at = [&](int i) { return map + 0x100 * (i + 1) + 0x28 + f.layout->attr_value; };
+    const auto set = [&](int i, float value) { f.Put<float>(value_at(i), value); };
+    f.Put(f.player + f.layout->player_attributes, map);
+    u64 link = map + 0x10;
+    for (int i = 0; i < 6; ++i) {
+        const u64 node = map + 0x100 * (i + 1);
+        f.Put(link, node);
+        link = node;
+        f.Put(node + 0x28 + f.layout->attr_attribute, f.host.main_base + attributes[i]);
+        f.Put<float>(value_at(i) - 4, maxima[i]);
+    }
+    f.Put<u64>(link, 0);
+    for (const auto [i, value] : {std::pair{0, 20.0f}, {1, 14.0f}, {2, 4.0f}, {3, 5.5f}, {4, 31.0f},
+                                  {5, 0.25f}})
+        set(i, value);
+    reader.Sample(f.host);
+    Check(f.ints["player.absorption_ok"] == 1 && f.ints["player.absorption"] == 4 &&
+          f.texts["player.absorption_label"] == "x2", "absorption in gold hearts");
+    Check(f.ints["player.saturation_ok"] == 1 && f.ints["player.saturation"] == 6,
+          "saturation rounds up like the HUD");
+    Check(f.ints["hud.saturation9"] == 2 && f.ints["hud.saturation7"] == 2 &&
+          f.ints["hud.saturation6"] == 0 && f.ints["hud.hunger3"] == 2,
+          "saturation outlines the hunger icons from the right");
+    Check(f.ints["player.xp_ok"] == 1 && f.ints["player.level"] == 31 &&
+          f.ints["player.xp_progress"] == 250, "experience level and progress");
+    set(2, 3.0f);
+    set(3, 18.0f);
+    set(1, 4.0f);
+    reader.Sample(f.host);
+    Check(f.texts["player.absorption_label"] == "x1.5", "half an absorption heart");
+    Check(f.ints["hud.saturation8"] == 2 && f.ints["hud.saturation7"] == 0,
+          "saturation never outlines more than the hunger shown");
+    set(2, 0.0f);
+    set(4, 30000.0f);
+    reader.Sample(f.host);
+    Check(f.texts["player.absorption_label"].empty() && f.ints["player.level"] == 30000,
+          "no absorption, levels beyond the HUD's 1024 range");
+    set(5, 1.5f);
+    reader.Sample(f.host);
+    Check(f.ints["player.xp_ok"] == 0 && f.ints["player.level"] == 0 &&
+          f.ints["player.health_ok"] == 1, "invalid progress hides experience only");
+    set(5, 0.5f);
+    f.Put<u64>(map + 0x100 * 6 + 0x28 + f.layout->attr_attribute, f.host.main_base + 1);
+    reader.Sample(f.host);
+    Check(f.ints["player.xp_ok"] == 0 && f.ints["player.saturation_ok"] == 1,
+          "a missing attribute is unavailable without hiding the others");
+    f.unreadable = value_at(3);
+    reader.Sample(f.host);
+    Check(f.ints["player.saturation_ok"] == 0 && f.ints["hud.saturation9"] == 0,
+          "unreadable saturation clears its outlines");
+}
+
 int main() {
     TestEffects();
+    TestPlayerAttributes();
     const std::map<std::string, std::string> translations{
         {"enchantment.digging", "Efficiency"}, {"enchantment.durability", "Unbreaking"},
         {"enchantment.lootBonusDigger", "Fortune"}, {"enchantment.frostwalker", "Frost Walker"},

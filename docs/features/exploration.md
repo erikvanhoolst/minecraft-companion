@@ -24,15 +24,32 @@ World keys are stable, case-sensitive names you choose for your saves. Use diffe
 different saves, even if they share the same displayed Minecraft name. Up to 32 unique presets,
 with up to 128 UTF-8 bytes per key, are supported. `world_key` selects the initial preset; the
 first preset is selected when it is absent. Dimension numbers are `0` Overworld, `1` Nether,
-and `2` End. **World** cycles presets and **Dimension** cycles these three dimensions.
+and `2` End. **World** cycles presets.
 
-Select the actual world and dimension and press **Confirm** before recording history or using
-waypoints. The displayed world/dimension is always visible. Confirmation is required at startup,
-after selecting another preset/dimension, and after a detected player disconnection or replacement.
-There are no verified world-save or dimension memory offsets in the supported layouts, so the app
-cannot automatically identify a save or every portal transition. Select the destination dimension
-before exploring it. A persistent guest pointer is not treated as a save identity. Without a
-configured world key the live map still works, and no permanent history is recorded.
+The dimension follows the game. The day clock reads the player's Dimension object twice per
+sample and accepts its id only when both reads agree and the object has that dimension's own
+vtable (see [day clock](day-clock.md)). While it is known, `world.dimension_auto` is 1, the
+**Dimension** button is replaced by **Dim: auto**, and the manual `world_dimension` action is
+refused. A change of dimension, such as a portal, keeps the confirmed world and switches history and
+waypoints to the new dimension. A tick without a readable dimension (a loading screen) keeps the last
+one; losing or replacing the player forgets it. Only then does **Dimension** cycle the three
+dimensions by hand, and `world_dimension` in the manifest sets the initial choice.
+
+Every chunk also names its Dimension (`LevelChunk +0x08`). While the dimension is known, chunks that
+belong to another one are skipped, so terrain the view still holds from before a portal is never
+recorded in the new dimension's history.
+
+Select the actual world and press **Confirm** before recording history or using waypoints. The
+displayed world/dimension is always visible. Confirmation is required at startup, after selecting
+another preset (or dimension by hand), and after a detected player disconnection or replacement.
+There is no verified world-save identity in the supported layouts, so the app cannot recognise a
+save by itself. A persistent guest pointer is not treated as a save identity. Without a configured
+world key the live map still works, and no permanent history is recorded.
+
+Beside the coordinates, `map.portal_label` and `map.portal_coords` give the matching block on the
+other side of a portal: X and Z divided by eight and rounded down in the Overworld, multiplied by
+eight in the Nether. `map.portal_ok` is 1 only in those two dimensions, and only while the dimension
+is detected or confirmed.
 
 On Linux the default directory is `$XDG_DATA_HOME/minecraft-companion` (if that environment variable
 is absolute), otherwise `$HOME/.local/share/minecraft-companion`. Set `data_directory` to an absolute
@@ -58,7 +75,8 @@ zoom is captured; unobserved areas stay blank. To revisit old routes, move back 
 zoom out. The existing Nether map still reads the roof heightmap rather than cave interiors.
 
 Published identity values, before waypoint sampling, are `world.ready` (confirmed fresh map player),
-`world.key` (full explicit key), `world.dimension` (0/1/2), `world.label`, and `world.diag`.
+`world.key` (full explicit key), `world.dimension` (0/1/2), `world.dimension_auto`, `world.label`,
+and `world.diag`.
 History diagnostics and counts are `map.history_diag`, `map.history_tiles`, `map.history_routes`;
 `map.routes` exposes the overlay setting. Old worker results and cached image keys are discarded
 when the map generation changes, preventing another world or zoom from reappearing on screen.

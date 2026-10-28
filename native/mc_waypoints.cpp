@@ -424,7 +424,7 @@ void Waypoints::Publish(const EdenDsmodHostApi& host) {
     number("waypoint.relative", 0); number("waypoint.bearing", 0);
     number("waypoint.map_x", 0); number("waypoint.map_z", 0);
     text("waypoint.target", selected ? selected->name : "Select a destination");
-    text("waypoint.navigation", ""); text("waypoint.coords", "");
+    text("waypoint.navigation", ""); text("waypoint.coords", ""); text("waypoint.portal", "");
     if (!selected) return;
     const auto nav = Navigate(x, y, z, heading, selected->x, selected->y, selected->z);
     integer("waypoint.arrow", !nav.arrived);
@@ -433,6 +433,14 @@ void Waypoints::Publish(const EdenDsmodHostApi& host) {
     text("waypoint.navigation", nav.arrived ? "At destination (horizontal)" :
         std::to_string(static_cast<long long>(std::llround(nav.distance))) + " blocks away");
     text("waypoint.coords", "X " + std::to_string(selected->x) + "  Y " + std::to_string(selected->y) + "  Z " + std::to_string(selected->z));
+    // Where a portal for this place goes on the other side: Overworld / 8, Nether * 8.
+    if (current.second == 0 || current.second == 1) {
+        const auto other = [&](std::int64_t v) {
+            return current.second == 0 ? static_cast<std::int64_t>(std::floor(v / 8.0)) : v * 8;
+        };
+        text("waypoint.portal", std::string(current.second == 0 ? "Nether" : "Overworld") + ": X " +
+            std::to_string(other(selected->x)) + "  Z " + std::to_string(other(selected->z)));
+    }
     const double px = map_px + selected->x - x, pz = map_pz + selected->z - z;
     const bool marker = map_view > 0 && std::isfinite(px) && std::isfinite(pz) &&
                         px >= 0 && pz >= 0 && px < map_view && pz < map_view;

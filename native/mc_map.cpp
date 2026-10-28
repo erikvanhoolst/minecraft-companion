@@ -222,11 +222,16 @@ bool Map::Render(const EdenDsmodHostApi& host, const Request& request, mc_assets
             const int gx = cx - grid.min_x, gz = cz - grid.min_z;
             if (gx < 0 || gz < 0 || gx >= grid.size_x || gz >= grid.size_z)
                 continue;
-            u64 level_chunk{};
+            u64 level_chunk{}, owner{};
             s32 pos[2]{};
             if (!Read(host, grid.chunks + (static_cast<u64>(gz) * grid.size_x + gx) * 16,
                       level_chunk) ||
-                !level_chunk || !Read(host, level_chunk + lay->chunk_pos, pos) || pos[0] != cx ||
+                !level_chunk ||
+                // Right after a portal the view can still hold the other dimension's chunks.
+                (request.dimension_object && lay->chunk_dimension &&
+                 (!Read(host, level_chunk + lay->chunk_dimension, owner) ||
+                  owner != request.dimension_object)) ||
+                !Read(host, level_chunk + lay->chunk_pos, pos) || pos[0] != cx ||
                 pos[1] != cz || !Read(host, level_chunk + lay->chunk_heightmap, c.height) ||
                 !Read(host, level_chunk + lay->chunk_subchunks, c.sub_ptr))
                 continue;
@@ -339,8 +344,23 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
     host.publish_i64(host.userdata,"world.ready",scoped);
     host.publish_text(host.userdata,"world.key",world_key.c_str());
     host.publish_i64(host.userdata,"world.dimension",dimension);
+    host.publish_i64(host.userdata,"world.dimension_auto",dimension_auto);
     host.publish_text(host.userdata,"world.label",label.c_str());
-    host.publish_text(host.userdata,"world.diag",scoped ? "" : world_key.empty() ? "Configure world_keys in manifest" : "Choose world + dimension, then Confirm");
+    host.publish_text(host.userdata,"world.diag",scoped ? "" : world_key.empty() ? "Configure world_keys in manifest" :
+        dimension_auto ? "Choose world, then Confirm" : "Choose world + dimension, then Confirm");
+    // A portal links an Overworld block to the Nether block at an eighth of its X and Z.
+    const s64 bx = static_cast<s64>(std::floor(place.x)), bz = static_cast<s64>(std::floor(place.z));
+    const bool portal = ready && (dimension_auto || scoped) && dimension < 2;
+    std::string coords;
+    if (portal) {
+        const auto other = [&](s64 v) {
+            return dimension == 0 ? static_cast<s64>(std::floor(v / 8.0)) : v * 8;
+        };
+        coords = "X " + std::to_string(other(bx)) + "  Z " + std::to_string(other(bz));
+    }
+    host.publish_i64(host.userdata,"map.portal_ok",portal);
+    host.publish_text(host.userdata,"map.portal_label",!portal ? "" : dimension == 0 ? "Nether" : "Overworld");
+    host.publish_text(host.userdata,"map.portal_coords",coords.c_str());
     host.publish_text(host.userdata,"map.history_diag",history_status.c_str());
     host.publish_i64(host.userdata,"map.history_tiles",tiles);
     host.publish_i64(host.userdata,"map.history_routes",routes);
@@ -359,21 +379,37 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
     // Yaw 180 faces north (-Z) and -90 east: clockwise from north is yaw + 180.
     const double heading = std::fmod(std::fmod(place.yaw + 180.0, 360.0) + 360.0, 360.0);
     host.publish_f64(host.userdata, "map.heading", heading);
-    host.publish_i64(host.userdata, "map.x", static_cast<s64>(std::floor(place.x)));
+    host.publish_i64(host.userdata, "map.x", bx);
     host.publish_i64(host.userdata, "map.y", static_cast<s64>(std::floor(place.y + 0.001)));
-    host.publish_i64(host.userdata, "map.z", static_cast<s64>(std::floor(place.z)));
+    host.publish_i64(host.userdata, "map.z", bz);
     host.publish_text(host.userdata, "map.facing", ready ? FacingName(heading) : "");
 }
 
-void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader) {
+void Map::FollowDimension(int id, u64 object) {
+    // The game's dimension replaces the manual choice. A portal keeps the confirmed world, so only
+    // the dimension's history and waypoints change. An unreadable tick (loading) keeps the last.
+    if (id < 0 || id > 2)
+        return;
+    dimension_auto = true;
+    dimension_object = object;
+    if (id != dimension) {
+        dimension = id;
+        Invalidate();
+    }
+}
+
+void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader,
+                 int game_dimension, u64 game_dimension_object) {
     const mc_reader::Layout* lay = reader.ActiveLayout();
     Place place;
     const u64 player=reader.Player();
     if (!player || (previous_player && previous_player!=player)) {
         if (player_was_ready || (previous_player && previous_player!=player)) { confirmed=false; Invalidate(); }
         player_was_ready=false;
+        dimension_auto=false; dimension_object=0;
     }
     if (player) previous_player=player;
+    if (player) FollowDimension(game_dimension, game_dimension_object);
     if (!lay || !lay->player_chunk_views) {
         diag = "no map for this game version";
         Publish(host, false, place);
@@ -381,6 +417,7 @@ void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader) 
     }
     if (!reader.Player() || !ReadPlace(host, reader, place)) {
         if (player_was_ready) { confirmed=false; Invalidate(); player_was_ready=false; }
+        dimension_auto=false; dimension_object=0;
         diag = "waiting for the player";
         Publish(host, false, place);
         return;
@@ -406,6 +443,7 @@ void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader) 
         Request next;
         next.serial=++serial; next.origin_x=bx-view/2; next.origin_z=bz-view/2; next.view=view;
         next.player=reader.Player(); next.layout=lay; next.colors=colors;
+        next.dimension_object=dimension_auto ? dimension_object : 0;
         next.scoped=confirmed && !worlds.empty();
         if (next.scoped) next.world=worlds[selected_world];
         next.dimension=dimension; next.player_x=bx; next.player_z=bz;
@@ -428,6 +466,7 @@ bool Map::OnAction(const char* action, s64) {
         selected_world=(selected_world+1)%worlds.size(); confirmed=false; Invalidate(); return true;
     }
     if (std::strcmp(action,"world_dimension")==0) {
+        if (dimension_auto) return false; // the game's own dimension is shown
         dimension=(dimension+1)%3; confirmed=false; Invalidate(); return true;
     }
     if (std::strcmp(action,"world_confirm")==0) {
