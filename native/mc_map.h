@@ -19,9 +19,13 @@
 //   map.portal_label     the other side of a portal: "Nether" or "Overworld"
 //   map.portal_coords    the matching block there, "X -12  Z 40" (Overworld / 8, Nether * 8)
 //   world.dimension_auto 1 while the dimension follows the game; Dimension is then refused
+//   map.biome, map.biome_id   the biome the player stands in ("" / -1 while unknown)
+//   map.biomes           1 while the map is coloured by biome ("map_biomes" toggles it)
+//   map.legend<i>.present, .name, .swatch   i = 0..5: the biomes covering most of the picture,
+//                        largest first; swatch is "module:mc:biome/<id>"
 //   map.diag             why map.ready is 0
 //   map.render_us        what the last picture cost to draw, in microseconds
-// Actions: "map_zoom_in", "map_zoom_out".
+// Actions: "map_zoom_in", "map_zoom_out", "map_routes", "map_biomes".
 
 #pragma once
 
@@ -64,6 +68,9 @@ public:
     bool OnAction(const char* action, s64 argument);
     /// Asset callback: fetch a completed picture for a "mapview/<n>" key.
     std::optional<mc_assets::Image> Load(const EdenDsmodHostApi& host, std::string_view key);
+    /// A legend swatch for a "biome/<id>" key.
+    static std::optional<mc_assets::Image> Swatch(std::string_view key);
+    static constexpr int LegendRows = 6;
 
 private:
     friend struct MapTestAccess;
@@ -76,7 +83,7 @@ private:
         u64 serial{}, generation{};
         std::string world;
         int dimension{};
-        bool scoped{}, route_start{};
+        bool scoped{}, route_start{}, biomes{};
         int player_x{}, player_z{};
         int origin_x{}, origin_z{}, view{};
         u64 player{}, dimension_object{};
@@ -91,7 +98,8 @@ private:
     bool ReadPlace(const EdenDsmodHostApi& host, const mc_reader::Reader& reader, Place& out);
     bool ReadColors(const EdenDsmodHostApi& host, const mc_reader::Reader& reader);
     static bool Render(const EdenDsmodHostApi& host, const Request& request,
-                       mc_assets::Image& out, std::string& why);
+                       mc_assets::Image& out, std::vector<u8>& biomes, std::string& why);
+    int ReadBiome(const EdenDsmodHostApi& host, const mc_reader::Reader& reader, int x, int z) const;
     void Publish(const EdenDsmodHostApi& host, bool ready, const Place& place);
     void Invalidate();
     void FollowDimension(int id, u64 object);
@@ -120,6 +128,8 @@ private:
     u64 dimension_object{};          // its Dimension, while dimension_auto
     u64 previous_player{};
     bool show_routes{true};
+    bool show_biomes{};
+    std::array<int, LegendRows> legend{}; // biome ids, -1 for an empty row
     Request pending;                 // the newest picture asked for
     std::array<Picture, 2> pictures; // the two newest drawn, newest first
     std::string render_diag;         // why the last drawing failed, or empty
@@ -131,6 +141,7 @@ private:
     int last_block_x{}, last_block_z{};
     u32 ticks_since_request{};
     bool want_picture{true};
+    int biome{-1};                   // under the player, -1 unknown
     u64 colors_player{};             // the player the colour table was read for
     std::array<u32, 256> colors{};
     std::string diag{"starting"};

@@ -145,6 +145,7 @@ struct Layout {
     u32 chunk_dimension{};     // LevelChunk: Dimension* it belongs to (0: not checked)
     u32 chunk_subchunks{};     // 16 pointers to SubChunk block data, bottom up
     u32 chunk_heightmap{};     // u16[256], index z * 16 + x: one above the top light-blocking block
+    u32 chunk_biomes{};        // u8[256] legacy biome ids, same index (0: biomes unavailable)
     u64 block_registry{};      // Block* mBlocks[256] by legacy id (main-relative)
     u32 block_map_color{};     // Color (4 floats) inside Block: the colour the game's maps use
     // Active effects: vector of 16-byte {s32 id, ticks, amplifier; u8 flags[3]}.

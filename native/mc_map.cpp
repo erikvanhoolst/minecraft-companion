@@ -12,6 +12,7 @@
 #include <vector>
 #include "nlohmann/json.hpp"
 
+#include "mc_biomes.h"
 #include "mc_reader.h"
 
 namespace mc_map {
@@ -41,10 +42,56 @@ int FloorDiv16(int v) {
     return v >= 0 ? v / 16 : -((15 - v) / 16);
 }
 
+/// The client's chunk view: the larger of the player's two PlayerChunkSources.
+struct Grid {
+    s32 min_x{}, min_z{}, size_x{}, size_z{};
+    u64 chunks{};
+};
+
+bool ReadGrid(const EdenDsmodHostApi& host, const mc_reader::Layout* lay, u64 player, Grid& grid) {
+    u64 views[2]{};
+    if (!Read(host, player + lay->player_chunk_views, views))
+        return false;
+    grid = {};
+    for (const u64 v : views) {
+        s32 b[9]{};
+        u64 begin{}, end{};
+        if (!v || !Read(host, v + lay->view_bounds, b) || !Read(host, v + lay->view_chunks, begin) ||
+            !Read(host, v + lay->view_chunks + 8, end))
+            continue;
+        const s32 size_x = b[6], size_z = b[8];
+        if (size_x <= 0 || size_z <= 0 || size_x > MaxViewChunks || size_z > MaxViewChunks ||
+            b[3] - b[0] + 1 != size_x || b[5] - b[2] + 1 != size_z ||
+            end - begin != static_cast<u64>(size_x) * size_z * 16)
+            continue;
+        if (size_x * size_z > grid.size_x * grid.size_z)
+            grid = {b[0], b[2], size_x, size_z, begin};
+    }
+    return grid.chunks != 0;
+}
+
+/// The LevelChunk at chunk (cx, cz), checked against its own position and, when `owner` is set,
+/// its Dimension: right after a portal the view can still hold the other dimension's chunks.
+u64 ChunkAt(const EdenDsmodHostApi& host, const mc_reader::Layout* lay, const Grid& grid, int cx,
+            int cz, u64 owner) {
+    const int gx = cx - grid.min_x, gz = cz - grid.min_z;
+    u64 chunk{}, dimension{};
+    s32 pos[2]{};
+    if (gx < 0 || gz < 0 || gx >= grid.size_x || gz >= grid.size_z ||
+        !Read(host, grid.chunks + (static_cast<u64>(gz) * grid.size_x + gx) * 16, chunk) ||
+        !chunk ||
+        (owner && lay->chunk_dimension &&
+         (!Read(host, chunk + lay->chunk_dimension, dimension) || dimension != owner)) ||
+        !Read(host, chunk + lay->chunk_pos, pos) || pos[0] != cx || pos[1] != cz)
+        return 0;
+    return chunk;
+}
+
 /// One LevelChunk of the view, read as far as the picture needs it.
 struct Chunk {
-    bool ok{};
+    bool ok{}, biomes_ok{};
     std::array<u16, 256> height{};
+    std::array<u8, 256> biomes{};
     std::array<u64, SubChunks> sub_ptr{};
     std::array<std::vector<u8>, SubChunks> blocks; // 4096 ids each, read on first use
 
@@ -76,6 +123,7 @@ const char* FacingName(double heading) {
 } // namespace
 
 Map::Map(const char* config) : data_directory{mc_exploration::DefaultDirectory()} {
+    legend.fill(-1);
     const auto j = nlohmann::json::parse(config ? config : "{}", nullptr, false);
     if (j.is_object()) {
         const auto valid_key = [](const std::string& s) {
@@ -119,7 +167,7 @@ void Map::Invalidate() {
     ++generation;
     pending = {};
     pictures = {};
-    render_diag.clear(); history_diag.clear(); history_tiles=history_route=0;
+    render_diag.clear(); history_diag.clear(); history_tiles=history_route=0; legend.fill(-1);
     // Serial numbers are never reused: old keys may remain in the host image cache.
     want_picture=true; route_start=true;
 }
@@ -177,35 +225,13 @@ bool Map::ReadColors(const EdenDsmodHostApi& host, const mc_reader::Reader& read
 }
 
 bool Map::Render(const EdenDsmodHostApi& host, const Request& request, mc_assets::Image& out,
-                 std::string& why) {
+                 std::vector<u8>& biomes, std::string& why) {
     const mc_reader::Layout* lay = request.layout;
     const int ox = request.origin_x, oz = request.origin_z, view = request.view;
     const auto& colors = request.colors;
-    // The client's chunk views: the larger of the player's two PlayerChunkSources.
-    u64 views[2]{};
-    if (!Read(host, request.player + lay->player_chunk_views, views)) {
-        why = "no chunk view";
-        return false;
-    }
-    struct Grid {
-        s32 min_x{}, min_z{}, size_x{}, size_z{};
-        u64 chunks{};
-    } grid;
-    for (const u64 v : views) {
-        s32 b[9]{};
-        u64 begin{}, end{};
-        if (!v || !Read(host, v + lay->view_bounds, b) || !Read(host, v + lay->view_chunks, begin) ||
-            !Read(host, v + lay->view_chunks + 8, end))
-            continue;
-        const s32 size_x = b[6], size_z = b[8];
-        if (size_x <= 0 || size_z <= 0 || size_x > MaxViewChunks || size_z > MaxViewChunks ||
-            b[3] - b[0] + 1 != size_x || b[5] - b[2] + 1 != size_z ||
-            end - begin != static_cast<u64>(size_x) * size_z * 16)
-            continue;
-        if (size_x * size_z > grid.size_x * grid.size_z)
-            grid = {b[0], b[2], size_x, size_z, begin};
-    }
-    if (!grid.chunks) {
+    biomes.assign(static_cast<std::size_t>(view) * view, mc_biomes::Unknown);
+    Grid grid;
+    if (!ReadGrid(host, lay, request.player, grid)) {
         why = "no chunk view";
         return false;
     }
@@ -219,24 +245,14 @@ bool Map::Render(const EdenDsmodHostApi& host, const Request& request, mc_assets
     for (int cz = cz0; cz <= cz1; ++cz) {
         for (int cx = cx0; cx <= cx1; ++cx) {
             Chunk& c = chunks[static_cast<std::size_t>(cz - cz0) * ncx + (cx - cx0)];
-            const int gx = cx - grid.min_x, gz = cz - grid.min_z;
-            if (gx < 0 || gz < 0 || gx >= grid.size_x || gz >= grid.size_z)
-                continue;
-            u64 level_chunk{}, owner{};
-            s32 pos[2]{};
-            if (!Read(host, grid.chunks + (static_cast<u64>(gz) * grid.size_x + gx) * 16,
-                      level_chunk) ||
-                !level_chunk ||
-                // Right after a portal the view can still hold the other dimension's chunks.
-                (request.dimension_object && lay->chunk_dimension &&
-                 (!Read(host, level_chunk + lay->chunk_dimension, owner) ||
-                  owner != request.dimension_object)) ||
-                !Read(host, level_chunk + lay->chunk_pos, pos) || pos[0] != cx ||
-                pos[1] != cz || !Read(host, level_chunk + lay->chunk_heightmap, c.height) ||
+            const u64 level_chunk = ChunkAt(host, lay, grid, cx, cz, request.dimension_object);
+            if (!level_chunk || !Read(host, level_chunk + lay->chunk_heightmap, c.height) ||
                 !Read(host, level_chunk + lay->chunk_subchunks, c.sub_ptr))
                 continue;
             c.ok = std::all_of(c.height.begin(), c.height.end(),
                                [](u16 h) { return h <= SubChunks * 16; });
+            c.biomes_ok = c.ok && lay->chunk_biomes &&
+                          Read(host, level_chunk + lay->chunk_biomes, c.biomes);
             loaded += c.ok;
         }
     }
@@ -264,6 +280,8 @@ bool Map::Render(const EdenDsmodHostApi& host, const Request& request, mc_assets
             if (!c.ok)
                 continue;
             const int lx = x & 15, lz = z & 15;
+            if (r > 0 && c.biomes_ok && mc_biomes::Name(c.biomes[lz * 16 + lx]))
+                biomes[static_cast<std::size_t>(r - 1) * view + i] = c.biomes[lz * 16 + lx];
             int y = c.height[lz * 16 + lx];
             for (int up = 0; up < 16 && c.Block(host, lx, y, lz) != 0; ++up)
                 ++y;
@@ -326,6 +344,7 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
     s64 us{};
     std::string history_status;
     std::size_t tiles{}, routes{};
+    std::array<int,LegendRows> rows{};
     {
         std::lock_guard lock{mutex};
         const Picture& p = pictures[0].serial != serial ? pictures[0] : pictures[1];
@@ -335,6 +354,7 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
         why = render_diag;
         us = render_us;
         history_status=history_diag; tiles=history_tiles; routes=history_route;
+        rows=legend;
     }
     ready = ready && serial != 0;
     const bool scoped = ready && confirmed && !worlds.empty();
@@ -365,6 +385,18 @@ void Map::Publish(const EdenDsmodHostApi& host, bool ready, const Place& place) 
     host.publish_i64(host.userdata,"map.history_tiles",tiles);
     host.publish_i64(host.userdata,"map.history_routes",routes);
     host.publish_i64(host.userdata,"map.routes",show_routes);
+    host.publish_i64(host.userdata,"map.biomes",show_biomes);
+    const char* biome_name = ready ? mc_biomes::Name(biome) : nullptr;
+    host.publish_text(host.userdata,"map.biome",biome_name ? biome_name : "");
+    host.publish_i64(host.userdata,"map.biome_id",biome_name ? biome : -1);
+    for (int i=0;i<LegendRows;++i) {
+        const int id=ready && show_biomes ? rows[i] : -1;
+        const char* name=mc_biomes::Name(id);
+        const std::string prefix="map.legend"+std::to_string(i);
+        host.publish_i64(host.userdata,(prefix+".present").c_str(),name!=nullptr);
+        host.publish_text(host.userdata,(prefix+".name").c_str(),name ? name : "");
+        host.publish_text(host.userdata,(prefix+".swatch").c_str(),name ? ("module:mc:biome/"+std::to_string(id)).c_str() : "");
+    }
     host.publish_i64(host.userdata, "map.ready", ready ? 1 : 0);
     host.publish_text(host.userdata, "map.diag", !ready ? diag.c_str() : why.c_str());
     char key[48];
@@ -416,6 +448,7 @@ void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader,
         return;
     }
     if (!reader.Player() || !ReadPlace(host, reader, place)) {
+        biome=-1;
         if (player_was_ready) { confirmed=false; Invalidate(); player_was_ready=false; }
         dimension_auto=false; dimension_object=0;
         diag = "waiting for the player";
@@ -442,7 +475,7 @@ void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader,
     if (want_picture || ticks_since_request >= RefreshTicks || (moved && ticks_since_request >= MinTicks)) {
         Request next;
         next.serial=++serial; next.origin_x=bx-view/2; next.origin_z=bz-view/2; next.view=view;
-        next.player=reader.Player(); next.layout=lay; next.colors=colors;
+        next.player=reader.Player(); next.layout=lay; next.colors=colors; next.biomes=show_biomes;
         next.dimension_object=dimension_auto ? dimension_object : 0;
         next.scoped=confirmed && !worlds.empty();
         if (next.scoped) next.world=worlds[selected_world];
@@ -454,6 +487,7 @@ void Map::Sample(const EdenDsmodHostApi& host, const mc_reader::Reader& reader,
             wake.notify_one();
         }
         last_block_x=bx; last_block_z=bz; ticks_since_request=0; want_picture=false;
+        biome=ReadBiome(host,reader,bx,bz);
     }
     Publish(host, true, place);
 }
@@ -473,6 +507,7 @@ bool Map::OnAction(const char* action, s64) {
         if (worlds.empty() || !player_was_ready) return false;
         confirmed=true; Invalidate(); return true;
     }
+    if (std::strcmp(action,"map_biomes")==0) { show_biomes=!show_biomes; want_picture=true; return true; }
     if (std::strcmp(action,"map_routes")==0) { std::lock_guard lock{mutex}; show_routes=!show_routes; want_picture=true; return true; }
     const bool in = std::strcmp(action, "map_zoom_in") == 0;
     if (!in && std::strcmp(action, "map_zoom_out") != 0)
@@ -488,6 +523,36 @@ bool Map::OnAction(const char* action, s64) {
     return true;
 }
 
+int Map::ReadBiome(const EdenDsmodHostApi& host, const mc_reader::Reader& reader, int x, int z) const {
+    const mc_reader::Layout* lay = reader.ActiveLayout();
+    Grid grid;
+    u8 id{};
+    if (!lay->chunk_biomes || !ReadGrid(host, lay, reader.Player(), grid))
+        return -1;
+    const u64 chunk = ChunkAt(host, lay, grid, FloorDiv16(x), FloorDiv16(z),
+                              dimension_auto ? dimension_object : 0);
+    if (!chunk || !Read(host, chunk + lay->chunk_biomes + (z & 15) * 16 + (x & 15), id) ||
+        !mc_biomes::Name(id))
+        return -1;
+    return id;
+}
+
+std::optional<mc_assets::Image> Map::Swatch(std::string_view key) {
+    if (!key.starts_with("biome/")) return std::nullopt;
+    key.remove_prefix(6); int id{};
+    const auto result=std::from_chars(key.data(),key.data()+key.size(),id);
+    if (result.ec!=std::errc{} || result.ptr!=key.data()+key.size() || !mc_biomes::Name(id)) return std::nullopt;
+    const u32 color=mc_biomes::Color(id);
+    mc_assets::Image image; image.width=image.height=8; image.rgba.resize(8*8*4);
+    for (std::size_t i=0;i<image.rgba.size();i+=4) {
+        // A dark one-pixel border keeps light biomes (Ice Plains) visible on the paper.
+        const std::size_t p=i/4; const bool edge=p%8==0||p%8==7||p<8||p>=56;
+        image.rgba[i]=edge?40:color>>16&0xFF; image.rgba[i+1]=edge?40:color>>8&0xFF;
+        image.rgba[i+2]=edge?40:color&0xFF; image.rgba[i+3]=255;
+    }
+    return image;
+}
+
 std::optional<mc_assets::Image> Map::Load(const EdenDsmodHostApi&, std::string_view key) {
     if (!key.starts_with("mapview/")) return std::nullopt;
     key.remove_prefix(8); u64 wanted{};
@@ -499,9 +564,10 @@ std::optional<mc_assets::Image> Map::Load(const EdenDsmodHostApi&, std::string_v
 }
 bool Map::DrawRequest(const EdenDsmodHostApi& host,const Request& request) {
     mc_assets::Image live;
+    std::vector<u8> biomes;
     std::string why;
     const auto t0=std::chrono::steady_clock::now();
-    const bool ok=Render(host,request,live,why);
+    const bool ok=Render(host,request,live,biomes,why);
     bool draw_routes{};
     {
         std::lock_guard lock{mutex};
@@ -526,11 +592,24 @@ bool Map::DrawRequest(const EdenDsmodHostApi& host,const Request& request) {
             found=histories.emplace(scope,std::move(store)).first;
         }
         history=found->second.get();
-        if (ok) history->Merge(request.origin_x,request.origin_z,live);
+        if (ok) history->Merge(request.origin_x,request.origin_z,live,&biomes);
         history->Visit(request.player_x,request.player_z,request.route_start);
         const auto now=std::chrono::steady_clock::now();
         if (now-last_save>=std::chrono::seconds(5)) { history->Save(); last_save=now; }
-        live=history->Draw(request.origin_x,request.origin_z,request.view,draw_routes);
+        live=history->Draw(request.origin_x,request.origin_z,request.view,draw_routes,request.biomes,&biomes);
+    } else if (request.biomes && ok) {
+        for (std::size_t i=0;i<biomes.size();++i) mc_biomes::Tint(live.rgba.data()+i*4,biomes[i]);
+    }
+    // The legend: the biomes that cover most of the picture, largest first.
+    std::array<int,LegendRows> top; top.fill(-1);
+    if (request.biomes) {
+        std::array<u32,256> area{};
+        for (const u8 id:biomes) if (id!=mc_biomes::Unknown) ++area[id];
+        for (int& row:top) {
+            const auto most=std::max_element(area.begin(),area.end());
+            if (!*most) break;
+            row=static_cast<int>(most-area.begin()); *most=0;
+        }
     }
     std::lock_guard lock{mutex};
     if (request.generation!=generation || pictures[0].serial>request.serial || stopping) return false;
@@ -545,6 +624,7 @@ bool Map::DrawRequest(const EdenDsmodHostApi& host,const Request& request) {
     }
     render_us=std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-t0).count();
     render_diag=why;
+    legend=top;
     pictures[1]=std::move(pictures[0]); pictures[0]=std::move(picture);
     wake.notify_all();
     return true;

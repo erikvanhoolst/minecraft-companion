@@ -46,6 +46,19 @@ There is no verified world-save identity in the supported layouts, so the app ca
 save by itself. A persistent guest pointer is not treated as a save identity. Without a configured
 world key the live map still works, and no permanent history is recorded.
 
+## Biomes
+
+Every chunk holds the legacy biome id of each column (`LevelChunk +0x140`, 256 bytes in the
+heightmap's `z * 16 + x` order). `map.biome` names the biome under the player; it is read when a new
+picture is requested, so at most once a second while standing still. **Biomes** (`map_biomes`)
+switches the picture to the biome view: each column takes its biome's colour with 30% of the terrain
+mixed in. Live columns and remembered ones are both drawn from their biome; a remembered column
+without a biome (recorded before version 2) is the terrain in grey. `map.legend0`–`map.legend5` list
+the biomes covering most of the picture, largest first, with a `module:mc:biome/<id>` swatch. Names
+are the game's 1.2-era English names (Extreme Hills, Roofed Forest, Mesa) and colours follow the
+palette biome map tools commonly use; variants (id + 128, such as Sunflower Plains) are slightly
+lighter. Unknown ids are treated as unread.
+
 Beside the coordinates, `map.portal_label` and `map.portal_coords` give the matching block on the
 other side of a portal: X and Z divided by eight and rounded down in the Overworld, multiplied by
 eight in the Nether. `map.portal_ok` is 1 only in those two dimensions, and only while the dimension
@@ -59,7 +72,10 @@ notice in this mode. Presets and the initial dimension come from the manifest ea
 is created; changing these fields requires reloading the package/game.
 
 Each world/dimension gets a separate `map-<key-hash>-<dimension>.mch` file. Files verify the full world
-key and dimension as well as a checksum, so filenames cannot silently merge identities. Snapshots
+key and dimension as well as a checksum, so filenames cannot silently merge identities. Version 2
+(`MCHIST02`) stores each 16×16 tile's colours followed by its 256 biome ids (`0xFF` for a column whose
+biome was never read); version 1 files from before biomes load with unknown biomes and are rewritten
+as version 2 at the next save. Snapshots
 use an exclusive unique temporary file, `fsync`, and atomic rename; existing symlinks and nonregular
 files are refused. Corrupt or unreadable files remain untouched and the diagnostic explains why
 they could not be used. Rename the problematic file manually before recording a replacement.

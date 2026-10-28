@@ -56,6 +56,12 @@ struct Module {
             sink(receiver, image->width, image->height, image->rgba.data(), image->rgba.size());
             return EDEN_DSMOD_TRUE;
         }
+        if (k.starts_with("biome/")) {
+            const auto image = mc_map::Map::Swatch(k);
+            if (!image) return EDEN_DSMOD_FALSE;
+            sink(receiver, image->width, image->height, image->rgba.data(), image->rgba.size());
+            return EDEN_DSMOD_TRUE;
+        }
         if (k == "waypoint/arrow") {
             const auto image = mc_waypoints::ArrowImage();
             sink(receiver, image.width, image.height, image.rgba.data(), image.rgba.size());

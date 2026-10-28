@@ -141,6 +141,7 @@ constexpr Layout Layouts[] = {
         .chunk_dimension = 0x08, // the clock's Dimension (live)
         .chunk_subchunks = 0xB8,
         .chunk_heightmap = 0x640,
+        .chunk_biomes = 0x140,
         .block_registry = 0x33A4BE8,
         .block_map_color = 0x70, // stone 112,112,112; grass 127,178,56; water 64,64,255
         // HUD calls main+0x11EF1A8 to get this vector, then advances by 16 bytes.

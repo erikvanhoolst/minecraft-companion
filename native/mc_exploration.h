@@ -18,16 +18,25 @@ public:
     bool IsScope(const std::string& key, int dim) const { return world == key && dimension == dim; }
     bool Load();
     bool Save();
-    void Merge(int x, int z, const mc_assets::Image& image);
+    /// `biomes`, when given, holds one biome id per pixel (mc_biomes::Unknown: not read).
+    void Merge(int x, int z, const mc_assets::Image& image,
+               const std::vector<std::uint8_t>* biomes = nullptr);
     void Visit(int x, int z, bool start);
-    mc_assets::Image Draw(int x, int z, int size, bool routes = true) const;
+    /// With `biome_view` the terrain is tinted by its recorded biome; `biomes`, when given,
+    /// receives the recorded biome id of every pixel.
+    mc_assets::Image Draw(int x, int z, int size, bool routes = true, bool biome_view = false,
+                          std::vector<std::uint8_t>* biomes = nullptr) const;
     std::size_t TileCount() const { return tiles.size(); }
     std::size_t RouteCount() const { return route.size(); }
     bool Dirty() const { return dirty; }
     const std::string& Diagnostic() const { return diagnostic; }
     std::filesystem::path File() const;
 private:
-    using Tile = std::array<std::uint8_t, 16 * 16 * 4>;
+    struct Tile {
+        std::array<std::uint8_t, 16 * 16 * 4> rgba{};
+        std::array<std::uint8_t, 16 * 16> biome; // filled with mc_biomes::Unknown
+        Tile();
+    };
     std::string world;
     int dimension;
     std::filesystem::path directory;

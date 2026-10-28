@@ -3,7 +3,7 @@
  "title_id": "0100D71004694000",
  "name": "Minecraft inventory",
  "min_runtime": 18,
- "_about": "Minecraft second-screen companion: live inventory, equipment, active potion effects and HUD with absorption, saturation and experience; remembered terrain and routes per confirmed world and detected dimension, with portal coordinates; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts; world time and sunset countdown. Assets come from the player’s own game.",
+ "_about": "Minecraft second-screen companion: live inventory, equipment, active potion effects and HUD with absorption, saturation and experience; remembered terrain, biomes and routes per confirmed world and detected dimension, a biome view, with portal coordinates; saved waypoints with navigation, automatic death markers and optional return trails; build projects with live inventory material counts; world time and sunset countdown. Assets come from the player’s own game.",
  "canvas_w": 1240,
  "canvas_h": 1080,
  "background": "#FF1E1E1E",
@@ -78,6 +78,13 @@
    "all_nonzero": [
     "detail.open",
     "inv.pickaxe_low"
+   ]
+  },
+  {
+   "name": "ui.map_legend",
+   "all_nonzero": [
+    "map.biomes",
+    "map.ready"
    ]
   }
  ],
@@ -268,6 +275,20 @@
      "text_scale": 3,
      "color": "#FFE6ECF2",
      "bind_text": "clock.time"
+    },
+    {
+     "_note": "the biome the player stands in",
+     "type": "label",
+     "rect": [
+      620,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFB8DFA4",
+     "bind_text": "map.biome"
     },
     {
      "type": "label",
@@ -1834,6 +1855,20 @@
      "bind_text": "clock.time"
     },
     {
+     "_note": "the biome the player stands in",
+     "type": "label",
+     "rect": [
+      620,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFB8DFA4",
+     "bind_text": "map.biome"
+    },
+    {
      "type": "label",
      "rect": [
       1210,
@@ -2037,6 +2072,53 @@
      "y_bind": "ui.map_my",
      "rotate_bind": "map.heading",
      "need_bind": "map.ready"
+    },
+    {
+     "_note": "biome legend: the six biomes covering most of the picture, largest first",
+     "type": "rect",
+     "rect": [
+      72,
+      846,
+      768,
+      74
+     ],
+     "bg": "#D0141414",
+     "color": "#00000000",
+     "frame": 0,
+     "need_bind": "ui.map_legend"
+    },
+    {
+     "type": "image",
+     "rect": [
+      84,
+      856,
+      20,
+      20
+     ],
+     "color": "#FFFFFFFF",
+     "src_bind": "map.legend{i}.swatch",
+     "need_bind": "map.legend{i}.present",
+     "repeat": 6,
+     "repeat_cols": 3,
+     "repeat_dx": 252,
+     "repeat_row_dy": 32
+    },
+    {
+     "type": "label",
+     "rect": [
+      112,
+      858,
+      0,
+      0
+     ],
+     "text_scale": 2,
+     "color": "#FFFFFFFF",
+     "bind_text": "map.legend{i}.name",
+     "need_bind": "map.legend{i}.present",
+     "repeat": 6,
+     "repeat_cols": 3,
+     "repeat_dx": 252,
+     "repeat_row_dy": 32
     },
     {
      "type": "label",
@@ -2445,7 +2527,7 @@
      "rect": [
       924,
       992,
-      286,
+      138,
       64
      ],
      "text": "Routes",
@@ -2455,6 +2537,41 @@
      "on_tap": "map_routes",
      "bg": "#FF262626",
      "color": "#FFFFFFFF"
+    },
+    {
+     "_note": "colour the map by biome; the legend lists the biomes in view",
+     "type": "button",
+     "rect": [
+      1072,
+      992,
+      138,
+      64
+     ],
+     "text": "Biomes",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "map_biomes",
+     "bg": "#FF262626",
+     "color": "#FFFFFFFF",
+     "need_bind": "!map.biomes"
+    },
+    {
+     "type": "button",
+     "rect": [
+      1072,
+      992,
+      138,
+      64
+     ],
+     "text": "Biomes",
+     "text_scale": 3,
+     "align": "center",
+     "border": 3,
+     "on_tap": "map_biomes",
+     "bg": "#FF3E3E3E",
+     "color": "#FFB8DFA4",
+     "need_bind": "map.biomes"
     },
     {
      "type": "rect",
@@ -2540,6 +2657,20 @@
      "text_scale": 3,
      "color": "#FFE6ECF2",
      "bind_text": "clock.time"
+    },
+    {
+     "_note": "the biome the player stands in",
+     "type": "label",
+     "rect": [
+      620,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFB8DFA4",
+     "bind_text": "map.biome"
     },
     {
      "type": "label",
@@ -3372,6 +3503,20 @@
      "text_scale": 3,
      "color": "#FFE6ECF2",
      "bind_text": "clock.time"
+    },
+    {
+     "_note": "the biome the player stands in",
+     "type": "label",
+     "rect": [
+      620,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFB8DFA4",
+     "bind_text": "map.biome"
     },
     {
      "type": "label",
@@ -4623,6 +4768,20 @@
      "bind_text": "clock.time"
     },
     {
+     "_note": "the biome the player stands in",
+     "type": "label",
+     "rect": [
+      620,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFB8DFA4",
+     "bind_text": "map.biome"
+    },
+    {
      "type": "label",
      "rect": [
       1210,
@@ -4941,6 +5100,20 @@
      "text_scale": 3,
      "color": "#FFE6ECF2",
      "bind_text": "clock.time"
+    },
+    {
+     "_note": "the biome the player stands in",
+     "type": "label",
+     "rect": [
+      620,
+      70,
+      0,
+      0
+     ],
+     "text_scale": 3,
+     "align": "center",
+     "color": "#FFB8DFA4",
+     "bind_text": "map.biome"
     },
     {
      "type": "label",
@@ -5287,6 +5460,11 @@
    "kind": "module",
    "action": "item_enchant_page",
    "argument": 1,
+   "haptic": "click"
+  },
+  "map_biomes": {
+   "kind": "module",
+   "action": "map_biomes",
    "haptic": "click"
   }
  },

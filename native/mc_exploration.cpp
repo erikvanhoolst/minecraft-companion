@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "mc_exploration.h"
+#include "mc_biomes.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -39,6 +40,8 @@ struct Parser {
     }
 };
 }
+History::Tile::Tile() { biome.fill(mc_biomes::Unknown); }
+
 std::filesystem::path DefaultDirectory() {
 #ifndef __ANDROID__
     if (const char* p = std::getenv("XDG_DATA_HOME"); p && std::filesystem::path(p).is_absolute())
@@ -63,7 +66,7 @@ bool History::Load() {
     const int fd=::open(File().c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK);
     if (fd<0) { if (errno==ENOENT) return true; return fail(); }
     struct stat status{};
-    constexpr std::size_t Maximum = MaxTiles * (1024+8) + MaxRoute * 12 + 2048;
+    constexpr std::size_t Maximum = MaxTiles * (1024+256+8) + MaxRoute * 12 + 2048;
     if (::fstat(fd,&status) || !S_ISREG(status.st_mode) || status.st_size<28 || static_cast<std::uint64_t>(status.st_size)>Maximum) {
         ::close(fd); return fail();
     }
@@ -77,7 +80,9 @@ bool History::Load() {
     }
     ::close(fd);
     Parser p{bytes}; char magic[8]{};
-    if (!p.Bytes(magic,8) || std::memcmp(magic,"MCHIST01",8)) return fail();
+    // Version 1 has no biomes: its columns load with an unknown biome.
+    if (!p.Bytes(magic,8) || (std::memcmp(magic,"MCHIST01",8) && std::memcmp(magic,"MCHIST02",8))) return fail();
+    const bool has_biomes=magic[7]=='2';
     std::uint32_t key_size{}, dim{}, count{}, points{}, checksum{};
     if (!p.U32(key_size) || key_size > 256 || key_size > bytes.size()-p.at) return fail();
     std::string key(key_size,'\0');
@@ -86,7 +91,8 @@ bool History::Load() {
     std::map<std::pair<int,int>,Tile> loaded;
     for (std::uint32_t i=0;i<count;++i) {
         std::uint32_t x{},z{}; Tile tile{};
-        if (!p.U32(x)||!p.U32(z)||!p.Bytes(tile.data(),tile.size())) return fail();
+        if (!p.U32(x)||!p.U32(z)||!p.Bytes(tile.rgba.data(),tile.rgba.size()) ||
+            (has_biomes && !p.Bytes(tile.biome.data(),tile.biome.size()))) return fail();
         const auto tx=static_cast<std::int32_t>(x), tz=static_cast<std::int32_t>(z);
         if (std::abs(static_cast<long long>(tx))>1875001 || std::abs(static_cast<long long>(tz))>1875001 ||
             !loaded.emplace(std::pair{tx,tz},tile).second) return fail();
@@ -105,9 +111,9 @@ bool History::Load() {
 }
 bool History::Save() {
     if (directory.empty() || blocked || !dirty) return !blocked;
-    std::string bytes{"MCHIST01"}; U32(bytes,world.size()); bytes += world;
+    std::string bytes{"MCHIST02"}; U32(bytes,world.size()); bytes += world;
     U32(bytes,dimension); U32(bytes,tiles.size()); U32(bytes,route.size());
-    for (const auto& [pos,tile]:tiles) { U32(bytes,pos.first); U32(bytes,pos.second); bytes.append(reinterpret_cast<const char*>(tile.data()),tile.size()); }
+    for (const auto& [pos,tile]:tiles) { U32(bytes,pos.first); U32(bytes,pos.second); bytes.append(reinterpret_cast<const char*>(tile.rgba.data()),tile.rgba.size()); bytes.append(reinterpret_cast<const char*>(tile.biome.data()),tile.biome.size()); }
     for (const auto& point:route) { U32(bytes,point.x); U32(bytes,point.z); U32(bytes,point.start); }
     U32(bytes,static_cast<std::uint32_t>(Hash(bytes)));
     std::error_code ec; std::filesystem::create_directories(directory,ec);
@@ -136,11 +142,15 @@ bool History::Save() {
     if (diagnostic.starts_with("History could not")) diagnostic.clear();
     return true;
 }
-void History::Merge(int ox,int oz,const mc_assets::Image& image) {
+void History::Merge(int ox,int oz,const mc_assets::Image& image,const std::vector<std::uint8_t>* biomes) {
     if (image.width>256 || image.height>256 || image.rgba.size()!=static_cast<std::size_t>(image.width)*image.height*4) return;
+    if (biomes && biomes->size()!=static_cast<std::size_t>(image.width)*image.height) biomes=nullptr;
     for (unsigned j=0;j<image.height;++j) for (unsigned i=0;i<image.width;++i) {
-        const auto* pixel=image.rgba.data()+(static_cast<std::size_t>(j)*image.width+i)*4;
-        if (!pixel[3]) continue; // an unloaded or unreadable column never erases known terrain
+        const std::size_t index=static_cast<std::size_t>(j)*image.width+i;
+        const auto* pixel=image.rgba.data()+index*4;
+        const std::uint8_t biome=biomes ? (*biomes)[index] : mc_biomes::Unknown;
+        // An unloaded or unreadable column never erases known terrain or biomes.
+        if (!pixel[3] && biome==mc_biomes::Unknown) continue;
         const int x=ox+static_cast<int>(i),z=oz+static_cast<int>(j);
         const std::pair pos{TileAt(x),TileAt(z)};
         auto it=tiles.find(pos);
@@ -148,8 +158,11 @@ void History::Merge(int ox,int oz,const mc_assets::Image& image) {
             if (tiles.size()==MaxTiles) { diagnostic="History tile limit reached; existing terrain retained"; continue; }
             it=tiles.emplace(pos,Tile{}).first;
         }
-        auto* stored=it->second.data()+((z&15)*16+(x&15))*4;
-        if (std::memcmp(stored,pixel,4)) { std::memcpy(stored,pixel,4); dirty=true; }
+        const int column=(z&15)*16+(x&15);
+        auto* stored=it->second.rgba.data()+column*4;
+        if (pixel[3] && std::memcmp(stored,pixel,4)) { std::memcpy(stored,pixel,4); dirty=true; }
+        auto& stored_biome=it->second.biome[column];
+        if (biome!=mc_biomes::Unknown && stored_biome!=biome) { stored_biome=biome; dirty=true; }
     }
 }
 void History::Visit(int x,int z,bool start) {
@@ -157,12 +170,19 @@ void History::Visit(int x,int z,bool start) {
     if (route.size()==MaxRoute) { diagnostic="History route limit reached; existing routes retained"; return; }
     route.push_back({x,z,start || route.empty()}); dirty=true;
 }
-mc_assets::Image History::Draw(int ox,int oz,int size,bool routes) const {
+mc_assets::Image History::Draw(int ox,int oz,int size,bool routes,bool biome_view,std::vector<std::uint8_t>* biomes) const {
     mc_assets::Image image; if (size<1 || size>256) return image;
     image.width=image.height=size; image.rgba.resize(static_cast<std::size_t>(size)*size*4);
+    if (biomes) biomes->assign(static_cast<std::size_t>(size)*size,mc_biomes::Unknown);
     for (int j=0;j<size;++j) for (int i=0;i<size;++i) {
         const int x=ox+i,z=oz+j; const auto it=tiles.find({TileAt(x),TileAt(z)});
-        if (it!=tiles.end()) std::memcpy(image.rgba.data()+(static_cast<std::size_t>(j)*size+i)*4,it->second.data()+((z&15)*16+(x&15))*4,4);
+        if (it==tiles.end()) continue;
+        const std::size_t index=static_cast<std::size_t>(j)*size+i;
+        const int column=(z&15)*16+(x&15);
+        auto* pixel=image.rgba.data()+index*4;
+        std::memcpy(pixel,it->second.rgba.data()+column*4,4);
+        if (biomes) (*biomes)[index]=it->second.biome[column];
+        if (biome_view) mc_biomes::Tint(pixel,it->second.biome[column]);
     }
     if (routes) for (std::size_t i=0;i<route.size();++i) {
         const auto& p=route[i]; int x=p.x-ox,z=p.z-oz;

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include "mc_biomes.h"
 #include "mc_exploration.h"
 #include "mc_map.h"
 #include <chrono>
@@ -52,8 +53,8 @@ struct Fixture {
 };
 namespace mc_map {
 struct MapTestAccess {
-    static bool Draw(Map& map,Fixture& f,std::string world,int dimension,std::uint64_t serial,bool fresh=true,std::uint64_t owner=0) {
-        Map::Request r; r.serial=serial;r.world=std::move(world);r.dimension=dimension;r.scoped=true;r.view=16;r.player=Fixture::Base+0x100;r.layout=&f.layout;r.colors[1]=0x112233;r.player_x=r.player_z=1000;r.dimension_object=owner;
+    static bool Draw(Map& map,Fixture& f,std::string world,int dimension,std::uint64_t serial,bool fresh=true,std::uint64_t owner=0,bool biomes=false,bool scoped=true) {
+        Map::Request r; r.serial=serial;r.world=std::move(world);r.dimension=dimension;r.scoped=scoped;r.biomes=biomes;r.view=16;r.player=Fixture::Base+0x100;r.layout=&f.layout;r.colors[1]=0x112233;r.player_x=r.player_z=1000;r.dimension_object=owner;
         { std::lock_guard lock{map.mutex}; r.generation=map.generation; map.pending=r; }
         if (!fresh) map.Invalidate();
         return map.DrawRequest(f.host,r);
@@ -73,6 +74,7 @@ struct MapTestAccess {
         map.serial=std::max<std::uint64_t>(map.serial,1);map.player_was_ready=true;
         map.Publish(f.host,true,Map::Place{x,64,z,0});
     }
+    static void Biomes(Map& map,bool on) { map.show_biomes=on; }
     static bool Await(Map& map) {
         std::unique_lock lock{map.mutex};
         return map.wake.wait_for(lock,std::chrono::seconds(2),[&]{return map.pictures[0].serial!=0;});
@@ -194,6 +196,66 @@ int main() {
         const std::string config="{\"data_directory\":\""+root.string()+"\"}";
         {mc_map::Map map(config.c_str());mc_map::MapTestAccess::Start(map,f);Check(mc_map::MapTestAccess::Await(map),"persistent background capture finishes");}
         History auto_history("Auto",0,root);Check(auto_history.Load()&&auto_history.TileCount()==1,"shutdown flush preserves captures across reload");
+    }
+    {
+        Check(std::string{mc_biomes::Name(21)}=="Jungle"&&std::string{mc_biomes::Name(149)}=="Jungle M"&&
+              !mc_biomes::Name(40)&&!mc_biomes::Name(mc_biomes::Unknown),"biome names by legacy id");
+        Check(mc_biomes::Color(1)==0x8DB360&&mc_biomes::Color(129)!=0&&mc_biomes::Color(129)!=mc_biomes::Color(1)&&
+              mc_biomes::Color(200)==0,"variants are lighter, unknown ids have no colour");
+        std::uint8_t px[4]={0,0,0,255}; mc_biomes::Tint(px,7);
+        Check(px[2]==178&&px[0]==0&&px[3]==255,"biome colour with 30% terrain");
+        std::uint8_t grey[4]={100,100,100,255}; mc_biomes::Tint(grey,mc_biomes::Unknown);
+        Check(grey[0]==60&&grey[1]==60&&grey[3]==255,"terrain without a biome is greyed");
+        std::uint8_t empty[4]={}; mc_biomes::Tint(empty,mc_biomes::Unknown);
+        Check(empty[3]==0,"unknown ground stays paper");
+
+        History biomes("Biomes",0,root);
+        std::vector<std::uint8_t> ids(256,4); ids[0]=21;
+        biomes.Merge(0,0,terrain,&ids);
+        std::vector<std::uint8_t> unknown_ids(256,mc_biomes::Unknown);
+        biomes.Merge(0,0,unknown,&unknown_ids);
+        std::vector<std::uint8_t> drawn_ids;
+        const auto plain=biomes.Draw(0,0,16,false,false,&drawn_ids);
+        Check(plain.rgba==terrain.rgba&&drawn_ids[0]==21&&drawn_ids[1]==4,"unread columns keep their recorded biome");
+        const auto tinted=biomes.Draw(0,0,16,false,true);
+        Check(tinted.rgba[0]==(0x53*7+10*3)/10&&tinted.rgba[4]==(0x05*7+10*3)/10,"biome view tints recorded terrain");
+        Check(biomes.Save(),"biome history saves");
+        History reread("Biomes",0,root); std::vector<std::uint8_t> reread_ids;
+        Check(reread.Load()&&reread.Draw(0,0,16,false,false,&reread_ids).rgba==terrain.rgba&&reread_ids==drawn_ids,"biomes survive reload");
+        {std::ifstream in(reread.File(),std::ios::binary);char magic[8]{};in.read(magic,8);Check(std::string(magic,8)=="MCHIST02","new files are version 2");}
+
+        // A version 1 file (terrain only) from before biomes loads with unknown biomes.
+        History old_format("Old",0,root);
+        std::string bytes{"MCHIST01"};
+        const auto u32=[&](std::uint32_t n){for(int i=0;i<4;++i)bytes.push_back(static_cast<char>(n>>(i*8)));};
+        const std::string key="Old"; u32(key.size()); bytes+=key; u32(0); u32(1); u32(0);
+        u32(0); u32(0); bytes.append(reinterpret_cast<const char*>(terrain.rgba.data()),1024);
+        std::uint64_t h=14695981039346656037ULL; for(unsigned char c:bytes){h^=c;h*=1099511628211ULL;}
+        u32(static_cast<std::uint32_t>(h));
+        {std::ofstream out(old_format.File(),std::ios::binary);out<<bytes;}
+        std::vector<std::uint8_t> old_ids;
+        Check(old_format.Load()&&old_format.Draw(0,0,16,false,false,&old_ids).rgba==terrain.rgba&&old_ids[5]==mc_biomes::Unknown,"version 1 history loads without biomes");
+    }
+    {
+        f.layout.chunk_biomes=0x300;
+        for (unsigned i=0;i<256;++i) f.Put<std::uint8_t>(0x1300+i,i<64?21:1);
+        f.Put<std::uint8_t>(0x1300+255,mc_biomes::Unknown);
+        mc_map::Map biomes(session_config.c_str()); mc_map::MapTestAccess::Biomes(biomes,true);
+        Check(mc_map::MapTestAccess::Draw(biomes,f,"",0,1,true,0,true,false),"live biome view draws");
+        const auto picture=biomes.Load(f.host,"mapview/1");
+        const int red=0x11*220/255; // level ground is shaded 220/255, as the game's map does
+        Check(picture&&picture->rgba[0]==(0x53*7+red*3)/10&&picture->rgba[4*4*16]==(0x8D*7+red*3)/10,"biomes follow the heightmap's z * 16 + x order");
+        Check((*picture).rgba[255*4]<100&&(*picture).rgba[255*4]==(*picture).rgba[255*4+1],"an unknown biome id greys its column");
+        mc_map::MapTestAccess::Publish(biomes,f);
+        Check(f.ints["map.biomes"]==1&&f.texts["map.legend0.name"]=="Plains"&&f.texts["map.legend1.name"]=="Jungle"&&
+              f.texts["map.legend1.swatch"]=="module:mc:biome/21"&&f.ints["map.legend2.present"]==0,"legend lists biomes by area");
+        mc_map::MapTestAccess::Biomes(biomes,false);mc_map::MapTestAccess::Publish(biomes,f);
+        Check(f.ints["map.biomes"]==0&&f.ints["map.legend0.present"]==0,"terrain view hides the legend");
+        Check(biomes.OnAction("map_biomes",0)&&(mc_map::MapTestAccess::Publish(biomes,f),f.ints["map.biomes"]==1),"Biomes toggles the view");
+        const auto swatch=mc_map::Map::Swatch("biome/21");
+        Check(swatch&&swatch->width==8&&swatch->rgba[(9*4)]==0x53&&swatch->rgba[0]==40,"legend swatch with a border");
+        Check(!mc_map::Map::Swatch("biome/40")&&!mc_map::Map::Swatch("biome/21x"),"swatch keys are validated");
+        f.layout.chunk_biomes=0;
     }
     std::filesystem::remove_all(root);
     std::puts("Exploration history, isolation, persistence and stale worker checks passed");
